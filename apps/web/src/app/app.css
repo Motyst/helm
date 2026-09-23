@@ -1,0 +1,90 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--gutter) var(--gutter);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: var(--step-1);
+  letter-spacing: -0.01em;
+}
+.wordmark-large {
+  font-size: var(--step-3);
+}
+
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.sync::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--contour);
+}
+.sync-live::before {
+  background: #3fae84;
+}
+.sync-offline {
+  color: var(--magenta);
+}
+.sync-offline::before {
+  background: var(--magenta);
+}
+
+/* ----- Login ----- */
+
+.login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+}
+.login-form {
+  width: min(22rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.login-form h1 {
+  margin-bottom: 1rem;
+}
+.login-form label {
+  font-weight: 700;
+}
+.login-form input {
+  font: inherit;
+  font-size: var(--step-1);
+  padding: 0.6em 0.8em;
+  border-radius: 10px;
+  border: 1.5px solid var(--contour);
+  background: var(--shallows);
+  color: var(--ink);
+}
+.login-form .btn {
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.login-error {
+  color: var(--magenta);
+}

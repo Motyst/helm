@@ -1,0 +1,162 @@
+/* Palette drawn from nautical charts: fog-white water, shallows tint, navy ink,
+   depth-contour blue, and chart magenta (used on real charts for lights & buoys). */
+:root {
+  --water: #eef3f4;
+  --shallows: #d3e4ea;
+  --ink: #18293a;
+  --ink-soft: #4b6072;
+  --contour: #7e9fb0;
+  --contour-faint: #c3d4db;
+  --magenta: #b3307a;
+  --magenta-soft: #b3307a26;
+
+  --font-sans: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-chart: 'Newsreader', Georgia, serif;
+
+  /* Type scale (perfect fourth, 1.333) */
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.333rem;
+  --step-2: 1.777rem;
+  --step-3: 2.369rem;
+  --step-hero: clamp(2.25rem, 1.2rem + 4.6vw, 5.75rem);
+
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 3rem);
+  --radius-control: 999px;
+  --radius-panel: 14px;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --water: #0f1c27;
+    --shallows: #17293a;
+    --ink: #d5e1e7;
+    --ink-soft: #8ea5b4;
+    --contour: #3e5b6e;
+    --contour-faint: #213646;
+    --magenta: #e26aa3;
+    --magenta-soft: #e26aa32e;
+  }
+}
+:root[data-theme='dark'] {
+  --water: #0f1c27;
+  --shallows: #17293a;
+  --ink: #d5e1e7;
+  --ink-soft: #8ea5b4;
+  --contour: #3e5b6e;
+  --contour-faint: #213646;
+  --magenta: #e26aa3;
+  --magenta-soft: #e26aa32e;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--water);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--magenta);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ----- Controls ----- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 44px;
+  padding: 0.55em 1.25em;
+  border-radius: var(--radius-control);
+  border: 1.5px solid var(--contour);
+  background: transparent;
+  font-weight: 700;
+  font-size: var(--step-0);
+  transition: background-color 120ms, border-color 120ms;
+}
+.btn:hover {
+  border-color: var(--ink);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--water);
+}
+.btn-primary:hover {
+  background: var(--magenta);
+  border-color: var(--magenta);
+}
+.btn-quiet {
+  border-color: transparent;
+  color: var(--ink-soft);
+}
+.btn-quiet:hover {
+  border-color: var(--contour-faint);
+  color: var(--ink);
+}
+
+/* Project name, lettered like a water name on a chart. */
+.chart-label {
+  font-family: var(--font-chart);
+  font-style: italic;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+}
+.chart-label::before {
+  content: '';
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--swatch, var(--contour));
+  align-self: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
