@@ -5,7 +5,8 @@ export type { TokenScope };
 
 /** Who is making a request. Every service call takes one. */
 export type Principal =
-  | { kind: 'owner' }
+  /** `via`: the owner accepted a change an agent proposed (e.g. the assistant panel). */
+  | { kind: 'owner'; via?: string }
   | {
       kind: 'token';
       tokenId: string;
@@ -16,10 +17,13 @@ export type Principal =
     };
 
 export const OWNER: Principal = { kind: 'owner' };
+/** Changes from the assistant panel: owner rights, recorded as the assistant's. */
+export const ASSISTANT: Principal = { kind: 'owner', via: 'assistant' };
 
-/** Recorded on every event, e.g. `owner` or `token:claude-desktop`. */
+/** Recorded on every event, e.g. `owner`, `ai:assistant` or `token:claude-desktop`. */
 export function actorOf(p: Principal): string {
-  return p.kind === 'owner' ? 'owner' : `token:${p.name}`;
+  if (p.kind === 'owner') return p.via ? `ai:${p.via}` : 'owner';
+  return `token:${p.name}`;
 }
 
 /** Whether the principal can see tasks in a project (null = Inbox). */

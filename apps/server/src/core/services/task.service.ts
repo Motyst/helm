@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, max, ne, o
 import { alias } from 'drizzle-orm/sqlite-core';
 import { projects, tasks, type TaskRow, type Tx } from '@helm/db';
 import {
+  ArrangeTasksInput,
   CreateTaskInput,
   DoneLogQuery,
   INBOX,
@@ -14,6 +15,7 @@ import {
   type Task,
   type TaskStatus,
 } from '@helm/shared';
+import { generateNKeysBetween } from 'fractional-indexing';
 import { ulid } from 'ulidx';
 import { assertRead, assertWrite, projectScope, type Principal } from '../auth/principal.ts';
 import { invalid, notFound, parse } from '../errors.ts';
@@ -233,6 +235,57 @@ export class TaskService {
     });
   }
 
+  /**
+   * Put top-level tasks in the given order, optionally setting priorities, in one step.
+   * The tasks swap among the positions they already hold, so everything else stays put.
+   */
+  arrange(p: Principal, input: unknown): Task[] {
+    const { items } = parse(ArrangeTasksInput, input);
+    return mutate(this.ctx, p, (tx, emit) => {
+      const seen = new Set<string>();
+      const rows = items.map((item) => {
+        if (seen.has(item.id)) throw invalid('Each task can appear only once');
+        seen.add(item.id);
+        const row = this.getRow(tx, item.id);
+        assertWrite(p, row.projectId);
+        if (row.parentTaskId) throw invalid('Only top-level tasks can be arranged');
+        return row;
+      });
+      const slots = rows.map((r) => r.position).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      // Equal keys can't express an order; give the whole group fresh ones in the same place.
+      const unique = new Set(slots).size === slots.length;
+      const keys = unique ? slots : this.freshKeys(tx, slots[0]!, rows.length, new Set(rows.map((r) => r.id)));
+
+      return rows.map((row, i) => {
+        const fields: Patch = {};
+        if (row.position !== keys[i]) fields.position = keys[i]!;
+        const priority = items[i]!.priority;
+        if (priority && priority !== row.priority) fields.priority = priority;
+        if (Object.keys(fields).length === 0) return toTask(row);
+        const updated = this.write(tx, row.id, fields);
+        emitTask(emit, 'moved', updated);
+        return toTask(updated);
+      });
+    });
+  }
+
+  /** `n` ascending keys starting at `from`, below the next top-level task that isn't being moved. */
+  private freshKeys(tx: Tx, from: string, n: number, moving: Set<string>): string[] {
+    const next = tx
+      .select({ id: tasks.id, v: tasks.position })
+      .from(tasks)
+      .where(and(isNull(tasks.parentTaskId), gt(tasks.position, from)))
+      .orderBy(asc(tasks.position))
+      .all()
+      .find((r) => !moving.has(r.id))?.v ?? null;
+    const before = tx
+      .select({ v: max(tasks.position) })
+      .from(tasks)
+      .where(and(isNull(tasks.parentTaskId), lt(tasks.position, from)))
+      .get()?.v ?? null;
+    return generateNKeysBetween(before, next, n);
+  }
+
   setStatus(p: Principal, id: string, status: TaskStatus): Task {
     return mutate(this.ctx, p, (tx, emit) => {
       const row = this.getRow(tx, id);
@@ -403,9 +456,9 @@ function emitTask(emit: Emit, action: string, row: TaskRow): void {
   emit({ entity: 'task', entityId: row.id, projectId: row.projectId, action, data: toTask(row) });
 }
 
-/** Owner picks freely (default manual). Tokens are always recorded as `ai:<something>`. */
+/** Owner picks freely (default manual, or the agent it acts via). Tokens are always `ai:<something>`. */
 function sourceFor(p: Principal, requested: string | undefined): string {
-  if (p.kind === 'owner') return requested ?? 'manual';
+  if (p.kind === 'owner') return requested ?? (p.via ? `ai:${p.via}` : 'manual');
   if (requested?.startsWith('ai:')) return requested;
   const slug = p.name
     .toLowerCase()

@@ -186,3 +186,70 @@ describe('createProviders', () => {
     );
   });
 });
+
+describe('OpenAiLlm.chat', () => {
+  const sse = (events: unknown[], split = 7) => {
+    const text = events.map((e) => `data: ${typeof e === 'string' ? e : JSON.stringify(e)}\n\n`).join('');
+    // Deliver in awkward chunks to exercise line buffering.
+    const chunks: string[] = [];
+    for (let i = 0; i < text.length; i += split) chunks.push(text.slice(i, i + split));
+    const enc = new TextEncoder();
+    return new Response(
+      new ReadableStream({
+        start(c) {
+          for (const ch of chunks) c.enqueue(enc.encode(ch));
+          c.close();
+        },
+      }),
+      { headers: { 'content-type': 'text/event-stream' } },
+    );
+  };
+  const delta = (d: object, finish: string | null = null) => ({ choices: [{ delta: d, finish_reason: finish }] });
+  const Proposal = z.object({ summary: z.string(), n: z.number().int() });
+
+  it('streams text and assembles a validated tool call', async () => {
+    const { f, calls } = fakeFetch(() =>
+      sse([
+        delta({ content: 'Hel' }),
+        delta({ content: 'lo' }),
+        delta({ tool_calls: [{ index: 0, function: { name: 'propose', arguments: '{"summ' } }] }),
+        delta({ tool_calls: [{ index: 0, function: { arguments: 'ary":"Two","n":2}' } }] }),
+        delta({}, 'tool_calls'),
+        '[DONE]',
+      ]),
+    );
+    const llm = new OpenAiLlm({ apiKey: 'k', model: 'm', fetch: f });
+    const out = [];
+    for await (const c of llm.chat({
+      system: 's',
+      messages: [{ role: 'user', content: 'hi' }],
+      tools: [{ name: 'propose', description: 'd', schema: Proposal }],
+    }))
+      out.push(c);
+    expect(out).toEqual([
+      { type: 'text', delta: 'Hel' },
+      { type: 'text', delta: 'lo' },
+      { type: 'tool', name: 'propose', input: { summary: 'Two', n: 2 } },
+    ]);
+    const body = JSON.parse(calls[0]!.init.body as string);
+    expect(body).toMatchObject({ stream: true, parallel_tool_calls: false });
+    expect(body.tools[0].function).toMatchObject({ name: 'propose', strict: true });
+    expect(body.tools[0].function.parameters.required).toEqual(['summary', 'n']);
+  });
+
+  it('rejects malformed tool calls and mid-stream errors', async () => {
+    const run = async (res: Response) => {
+      const llm = new OpenAiLlm({ apiKey: 'k', model: 'm', fetch: fakeFetch(() => res).f });
+      const gen = llm.chat({ system: 's', messages: [], tools: [{ name: 'propose', description: 'd', schema: Proposal }] });
+      return caught(
+        (async () => {
+          for await (const _ of gen);
+        })(),
+      );
+    };
+    const bad = await run(sse([delta({ tool_calls: [{ index: 0, function: { name: 'propose', arguments: '{"n":"x"}' } }] })]));
+    expect(bad.kind).toBe('bad_output');
+    const err = await run(sse([delta({ content: 'a' }), { error: { message: 'server overloaded' } }]));
+    expect(err.message).toBe('OpenAI stopped with an error: server overloaded');
+  });
+});

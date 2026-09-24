@@ -16,6 +16,27 @@ export interface ObjectRequest<S extends z.ZodType> {
   signal?: AbortSignal;
 }
 
+/** A function the model may call. Its input is validated against `schema` before it's yielded. */
+export interface ToolSpec {
+  name: string;
+  description: string;
+  /** Same rules as ObjectRequest.schema. */
+  schema: z.ZodType;
+}
+
+export interface ChatRequest {
+  system: string;
+  messages: ChatMessage[];
+  tools?: ToolSpec[];
+  signal?: AbortSignal;
+}
+
+export type ChatChunk =
+  /** More of the answer text. */
+  | { type: 'text'; delta: string }
+  /** A complete, validated tool call. */
+  | { type: 'tool'; name: string; input: unknown };
+
 /** A chat model. Adapters turn this into one vendor's API. */
 export interface LlmProvider {
   /** Adapter id, e.g. `openai`. */
@@ -23,6 +44,8 @@ export interface LlmProvider {
   readonly model: string;
   /** Ask for a JSON answer matching `schema`; the result is validated before it's returned. */
   object<S extends z.ZodType>(req: ObjectRequest<S>): Promise<z.output<S>>;
+  /** Stream an answer. Tool calls arrive whole, after their arguments finish streaming. */
+  chat(req: ChatRequest): AsyncIterable<ChatChunk>;
 }
 
 export interface TranscribeRequest {

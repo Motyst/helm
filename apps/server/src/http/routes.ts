@@ -13,6 +13,7 @@ export function apiRoutes(s: Services): Hono<AppEnv> {
   r.patch('/tasks/:id', async (c) => c.json(s.tasks.update(c.var.principal, c.req.param('id'), await jsonBody(c))));
   r.delete('/tasks/:id', (c) => c.json(s.tasks.remove(c.var.principal, c.req.param('id'))));
   r.post('/tasks/:id/move', async (c) => c.json(s.tasks.move(c.var.principal, c.req.param('id'), await jsonBody(c))));
+  r.post('/tasks/arrange', async (c) => c.json(s.tasks.arrange(c.var.principal, await jsonBody(c))));
   for (const action of ['start', 'stop', 'complete', 'reopen'] as const) {
     r.post(`/tasks/:id/${action}`, (c) => c.json(s.tasks[action](c.var.principal, c.req.param('id'))));
   }

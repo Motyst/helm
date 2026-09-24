@@ -51,6 +51,21 @@ Choose them with `HELM_LLM_PROVIDER` and `HELM_STT_PROVIDER` (`openai` or `none`
 `POST /api/v1/voice/parse` takes audio (`Content-Type: audio/webm`, `audio/mp4`, ...) or JSON
 `{"text": "..."}` and returns suggestions without saving them. Read-only tokens can't use it.
 
+## Assistant
+
+Open the assistant with the compass button (or A). It needs `OPENAI_API_KEY` (or another
+`HELM_LLM_PROVIDER`). Your open tasks and the last week's done work are sent to the model with
+each request.
+
+- **Suggest order**: a working order for all open tasks, a suggested priority and a one-line
+  reason for each. Change priorities or move rows, then apply. Undo puts everything back.
+- **Chat**: ask about the board or ask for changes. The assistant only proposes changes (add,
+  edit, start, pause, finish, reopen; never delete); tick the ones you want and apply them.
+
+Applied changes are recorded as `ai:assistant`. Endpoints (owner only): `POST
+/api/v1/assistant/prioritize`, `POST /api/v1/assistant/chat` (streams NDJSON) and `POST
+/api/v1/assistant/apply`. `POST /api/v1/tasks/arrange` reorders tasks for any client.
+
 ## Connect AI assistants
 
 In Helm, open Settings (the cog) and create a token for each assistant or script. Choose read

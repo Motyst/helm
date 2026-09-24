@@ -1,5 +1,10 @@
 import type {
   ApiToken,
+  ApplyResult,
+  AssistantChange,
+  AssistantStatus,
+  ChatStreamEvent,
+  PrioritySuggestion,
   CreatedToken,
   CreateProjectInput,
   CreateTokenInput,
@@ -66,6 +71,45 @@ function queryString(q: object): string {
 
 export type TaskAction = 'start' | 'stop' | 'complete' | 'reopen';
 
+/** The device's time zone, so the server's idea of "today" matches the user's. */
+const tzQuery = () => queryString({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+
+/** Lines of an NDJSON response as parsed objects. */
+export async function* readNdjson<T>(body: ReadableStream<Uint8Array>): AsyncGenerator<T> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split('\n');
+    buffer = done ? '' : lines.pop()!;
+    for (const line of lines) if (line.trim()) yield JSON.parse(line) as T;
+    if (done) return;
+  }
+}
+
+async function* chatStream(messages: { role: 'user' | 'assistant'; content: string }[], signal?: AbortSignal) {
+  let res: Response;
+  try {
+    res = await fetch(`/api/v1/assistant/chat${tzQuery()}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ messages }),
+      signal,
+    });
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    throw new ApiError(0, 'unreachable', 'Can’t reach Helm. Check your connection and try again.');
+  }
+  if (!res.ok || !res.body) {
+    const err = res.headers.get('content-type')?.includes('json') ? ((await res.json()).error ?? {}) : {};
+    throw new ApiError(res.status, err.code ?? 'error', err.message ?? res.statusText);
+  }
+  yield* readNdjson<ChatStreamEvent>(res.body);
+}
+
 export const api = {
   me: () => request<{ signedIn: boolean }>('GET', '/auth/me'),
   login: (password: string) => request<{ ok: true }>('POST', '/auth/login', { password }),
@@ -89,12 +133,18 @@ export const api = {
   createToken: (input: CreateTokenInput) => request<CreatedToken>('POST', '/tokens', input),
   revokeToken: (id: string) => request<ApiToken>('DELETE', `/tokens/${id}`),
 
+  assistantStatus: () => request<AssistantStatus>('GET', '/assistant'),
+  prioritize: (signal?: AbortSignal) =>
+    request<PrioritySuggestion>('POST', `/assistant/prioritize${tzQuery()}`, {}, signal),
+  applyChanges: (changes: AssistantChange[]) => request<ApplyResult>('POST', '/assistant/apply', { changes }),
+  chat: chatStream,
+
   voiceStatus: () => request<VoiceStatus>('GET', '/voice'),
   /** Audio from the recorder, or text from the browser's own speech recognition. */
   voiceParse: (input: Blob | string, signal?: AbortSignal) =>
     request<VoiceParseResult>(
       'POST',
-      `/voice/parse${queryString({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone })}`,
+      `/voice/parse${tzQuery()}`,
       typeof input === 'string' ? { text: input } : input,
       signal,
     ),

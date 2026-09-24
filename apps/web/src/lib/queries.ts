@@ -16,6 +16,7 @@ export const keys = {
   done: ['done'] as const,
   tokens: ['tokens'] as const,
   voice: ['voice'] as const,
+  assistant: ['assistant'] as const,
 };
 
 /** Queries kept on the device so the app opens with the last snapshot, even offline. */
@@ -87,6 +88,10 @@ export function upsertProject(qc: QueryClient, project: Project) {
 }
 
 /** "Last used" changes without a live event, so refresh while the list is on screen. */
+/** Changes only when the server restarts with other settings. */
+export const useAssistantStatus = () =>
+  useQuery({ queryKey: keys.assistant, queryFn: api.assistantStatus, staleTime: 5 * 60_000 });
+
 /** Changes only when the server restarts with other settings. */
 export const useVoiceStatus = () => useQuery({ queryKey: keys.voice, queryFn: api.voiceStatus, staleTime: 5 * 60_000 });
 

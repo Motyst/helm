@@ -8,6 +8,7 @@ import { createApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { EventBus } from './core/events/bus.ts';
 import { createServices, type ServiceContext } from './core/services/index.ts';
+import { assistantModule } from './modules/assistant/index.ts';
 import { mcpModule } from './modules/mcp/index.ts';
 import { voiceModule } from './modules/voice/index.ts';
 
@@ -19,7 +20,7 @@ const services = createServices(ctx);
 const providers = createProviders(config.ai);
 for (const reason of Object.values(providers.reasons)) if (reason) console.log(`AI: ${reason}`);
 
-const app = await createApp({ config, ctx, services, providers, modules: [mcpModule, voiceModule] });
+const app = await createApp({ config, ctx, services, providers, modules: [mcpModule, voiceModule, assistantModule] });
 
 // Production: serve the built PWA and fall back to index.html for client-side routes.
 const webRoot = config.webDist ? resolve(config.webDist) : null;

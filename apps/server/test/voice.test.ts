@@ -29,6 +29,7 @@ function fakeLlm(answer: { tasks: ModelTask[] } | Error) {
       if (answer instanceof Error) throw answer;
       return req.schema.parse(answer);
     },
+    async *chat() {},
   };
   return { llm, requests };
 }

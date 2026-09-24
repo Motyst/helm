@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { AssistantProvider, useAssistant } from '../features/assistant/AssistantContext.tsx';
+import { AssistantIcon, AssistantPanel } from '../features/assistant/AssistantPanel.tsx';
 import { BoardView } from '../features/board/BoardView.tsx';
 import { DoneView } from '../features/done/DoneView.tsx';
 import { FocusView } from '../features/focus/FocusView.tsx';
@@ -55,7 +57,9 @@ export function App() {
   return (
     <ToastProvider>
       <EditorProvider>
-        <Shell sync={sync} />
+        <AssistantProvider>
+          <Shell sync={sync} />
+        </AssistantProvider>
       </EditorProvider>
     </ToastProvider>
   );
@@ -87,9 +91,11 @@ function Shell({ sync }: { sync: SyncState }) {
   const editor = useEditor();
   const route = useRoute();
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const assistant = useAssistant();
   useMutationErrorToasts();
 
-  // Single-key shortcuts: N new task, V voice, F focus, B board, D done (not while typing or in a dialog).
+  // Single-key shortcuts: N new task, V voice, A assistant, F focus, B board, D done
+  // (not while typing or in a dialog).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
@@ -104,15 +110,21 @@ function Shell({ sync }: { sync: SyncState }) {
         setVoiceOpen(true);
         return;
       }
+      if (e.key === 'a') {
+        e.preventDefault();
+        if (assistant.isOpen) assistant.hide();
+        else assistant.show();
+        return;
+      }
       const nav = NAV.find((n) => n.key === e.key);
       if (nav) window.location.hash = hrefFor(nav.route);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editor]);
+  }, [editor, assistant]);
 
   return (
-    <div className={`shell shell-${route}`}>
+    <div className={`shell shell-${route}${assistant.isOpen ? ' has-assistant' : ''}`}>
       <header className="topbar">
         <span className="wordmark">Helm</span>
         <nav className="nav" aria-label="Views">
@@ -150,6 +162,16 @@ function Shell({ sync }: { sync: SyncState }) {
             </svg>
           </a>
           <button
+            className="topbar-icon"
+            onClick={() => (assistant.isOpen ? assistant.hide() : assistant.show())}
+            aria-label="Assistant"
+            title="Assistant (A)"
+            aria-expanded={assistant.isOpen}
+            aria-keyshortcuts="a"
+          >
+            <AssistantIcon />
+          </button>
+          <button
             className="topbar-icon voice-btn"
             onClick={() => setVoiceOpen(true)}
             aria-label="Add a task by voice"
@@ -175,6 +197,7 @@ function Shell({ sync }: { sync: SyncState }) {
       ) : (
         <FocusView />
       )}
+      <AssistantPanel />
       {voiceOpen && (
         <VoiceCapture
           onResult={(r) => {

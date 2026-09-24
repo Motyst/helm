@@ -236,6 +236,85 @@ export interface VoiceParseResult {
   notice?: string;
 }
 
+// ---------- Assistant ----------
+
+/** Put tasks in this order (and optionally set priorities). Only top-level tasks. */
+export const ArrangeItems = z
+  .array(z.object({ id: Id, priority: Priority.optional() }).strict())
+  .min(1)
+  .max(500);
+
+export const ArrangeTasksInput = z.object({ items: ArrangeItems }).strict();
+export type ArrangeTasksInput = z.input<typeof ArrangeTasksInput>;
+
+/** One change the assistant proposed and the user accepted. Deleting is deliberately absent. */
+export const AssistantChange = z.union([
+  z
+    .object({
+      action: z.literal('create'),
+      title: Title,
+      notes: Notes.optional(),
+      projectId: Id.nullable().optional(),
+      priority: Priority.optional(),
+      estimateMinutes: Estimate.optional(),
+      parentTaskId: Id.nullable().optional(),
+      subtasks: z.array(Title).max(50).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('update'),
+      taskId: Id,
+      title: Title.optional(),
+      notes: Notes.optional(),
+      projectId: Id.nullable().optional(),
+      priority: Priority.optional(),
+      estimateMinutes: Estimate.optional(),
+    })
+    .strict(),
+  z.object({ action: z.enum(['start', 'stop', 'complete', 'reopen']), taskId: Id }).strict(),
+  z.object({ action: z.literal('arrange'), items: ArrangeItems }).strict(),
+]);
+export type AssistantChange = z.infer<typeof AssistantChange>;
+
+export const ApplyChangesInput = z.object({ changes: z.array(AssistantChange).min(1).max(50) }).strict();
+export type ApplyChangesInput = z.input<typeof ApplyChangesInput>;
+
+export interface ApplyResult {
+  /** One per change, in order. A failed change doesn't stop the rest. */
+  results: { ok: boolean; error?: string }[];
+}
+
+export interface AssistantStatus {
+  available: boolean;
+  /** Why not, in words for the user. */
+  reason?: string;
+}
+
+/** A suggested working order for open top-level tasks, first = do first. */
+export interface PrioritySuggestion {
+  /** One or two sentences on the overall reasoning. */
+  summary: string;
+  items: { taskId: string; priority: Priority; reason: string | null }[];
+}
+
+export const AssistantChatInput = z
+  .object({
+    messages: z
+      .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().trim().min(1).max(8000) }).strict())
+      .min(1)
+      .max(40),
+  })
+  .strict();
+export type AssistantChatInput = z.input<typeof AssistantChatInput>;
+
+/** Lines of the chat stream (NDJSON). */
+export type ChatStreamEvent =
+  | { type: 'text'; delta: string }
+  | { type: 'proposal'; summary: string; changes: AssistantChange[] }
+  | { type: 'error'; message: string }
+  | { type: 'done' };
+
 // ---------- Realtime ----------
 
 export const EVENT_ENTITIES = ['task', 'project', 'token'] as const;
