@@ -1,4 +1,12 @@
-import type { CreateProjectInput, CreateTaskInput, Project, Task, UpdateTaskInput } from '@helm/shared';
+import type {
+  CreateProjectInput,
+  CreateTaskInput,
+  MoveTaskInput,
+  Project,
+  Task,
+  UpdateProjectInput,
+  UpdateTaskInput,
+} from '@helm/shared';
 
 export class ApiError extends Error {
   constructor(
@@ -37,7 +45,10 @@ export const api = {
   updateTask: (id: string, patch: UpdateTaskInput) => request<Task>('PATCH', `/tasks/${id}`, patch),
   deleteTask: (id: string) => request<Task>('DELETE', `/tasks/${id}`),
   taskAction: (id: string, action: TaskAction) => request<Task>('POST', `/tasks/${id}/${action}`),
+  moveTask: (id: string, input: MoveTaskInput) => request<Task>('POST', `/tasks/${id}/move`, input),
 
   projects: () => request<Project[]>('GET', '/projects'),
   createProject: (input: CreateProjectInput) => request<Project>('POST', '/projects', input),
+  updateProject: (id: string, patch: UpdateProjectInput) => request<Project>('PATCH', `/projects/${id}`, patch),
+  archiveProject: (id: string) => request<Project>('DELETE', `/projects/${id}`),
 };

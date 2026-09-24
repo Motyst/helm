@@ -13,10 +13,37 @@
   padding-top: max(1rem, env(safe-area-inset-top));
 }
 
+.topbar {
+  gap: 1rem;
+}
 .topbar-end {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+}
+
+.nav {
+  display: flex;
+  gap: 0.25rem;
+  margin-right: auto;
+  margin-left: 1rem;
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-decoration: none;
+}
+.nav a:hover {
+  color: var(--ink);
+}
+.nav a[aria-current='page'] {
+  color: var(--ink);
+  background: var(--shallows);
 }
 
 .wordmark {
@@ -87,4 +114,27 @@
 }
 .login-error {
   color: var(--magenta);
+}
+
+/* Phones: tighter top bar. Last in the file so it wins over the base rules above. */
+@media (max-width: 520px) {
+  .topbar,
+  .topbar-end {
+    gap: 0.6rem;
+  }
+  .nav {
+    margin-left: 0;
+    gap: 0;
+  }
+  .nav a {
+    padding: 0 0.6rem;
+  }
+  .topbar-end .btn {
+    padding-inline: 0.9rem;
+  }
+  /* Keep the status dot, drop the word. */
+  .sync {
+    font-size: 0;
+    gap: 0;
+  }
 }

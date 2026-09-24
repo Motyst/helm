@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { Project, Task } from '@helm/shared';
+import type { MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
 import { api, type TaskAction } from './api.ts';
 
 export const keys = {
@@ -8,7 +8,9 @@ export const keys = {
 };
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
-export const useProjects = () => useQuery({ queryKey: keys.projects, queryFn: api.projects });
+const liveProjects = (ps: Project[]) => ps.filter((p) => !p.archivedAt);
+/** Active projects. Archived ones stay in the cache (live events upsert them) but are filtered out here. */
+export const useProjects = () => useQuery({ queryKey: keys.projects, queryFn: api.projects, select: liveProjects });
 
 /** Insert or replace an entity in a cached list (used by mutations and live events). */
 export function upsert<T extends { id: string; updatedAt: string }>(qc: QueryClient, key: readonly unknown[], item: T) {
@@ -45,5 +47,40 @@ export function useTaskAction() {
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: TaskAction }) => api.taskAction(id, action),
     onSuccess: (task) => upsertTask(qc, task),
+  });
+}
+
+export function useMoveTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: MoveTaskInput }) => api.moveTask(id, input),
+    onSuccess: (task) => upsertTask(qc, task),
+  });
+}
+
+export function useUpdateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateProjectInput }) => api.updateProject(id, patch),
+    // Optimistic: collapse/expand should feel instant.
+    onMutate: ({ id, patch }) => {
+      const p = qc.getQueryData<Project[]>(keys.projects)?.find((x) => x.id === id);
+      // Keep the old updatedAt so the server response (newer) always wins.
+      if (p) upsertProject(qc, { ...p, ...patch });
+    },
+    onSuccess: (p) => upsertProject(qc, p),
+    onError: () => qc.invalidateQueries({ queryKey: keys.projects }),
+  });
+}
+
+export function useArchiveProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.archiveProject,
+    onSuccess: (p) => {
+      upsertProject(qc, p);
+      // Its tasks leave the board; refetch rather than patch each one.
+      void qc.invalidateQueries({ queryKey: keys.tasks });
+    },
   });
 }

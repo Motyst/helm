@@ -70,6 +70,12 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
     titleRef.current?.focus();
   }, []);
 
+  // Tell the parent directly; the native `close` event (kept for Escape) can arrive late or not at all.
+  const close = () => {
+    dialogRef.current?.close();
+    onClose();
+  };
+
   // The task was deleted elsewhere while open.
   useEffect(() => {
     if (target.mode === 'edit' && tasks.data && !editing) onClose();
@@ -148,7 +154,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
       } else {
         upsertTask(qc, await createFromDraft(final, parentId));
       }
-      onClose();
+      close();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t save. Check that the server is running.');
     } finally {
@@ -165,7 +171,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
     setBusy(true);
     try {
       upsertTask(qc, await api.deleteTask(editing.id));
-      onClose();
+      close();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t delete.');
       setBusy(false);
@@ -182,7 +188,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
       aria-labelledby="editor-heading"
       onClose={onClose}
       onClick={(e) => {
-        if (e.target === dialogRef.current) dialogRef.current.close(); // backdrop click
+        if (e.target === dialogRef.current) close(); // backdrop click
       }}
     >
       <form
@@ -198,7 +204,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
       >
         <header className="editor-head">
           <h2 id="editor-heading">{heading}</h2>
-          <button type="button" className="icon-btn" aria-label="Close" onClick={() => dialogRef.current?.close()}>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={close}>
             ✕
           </button>
         </header>
@@ -424,7 +430,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
             </button>
           )}
           <span className="spacer" />
-          <button type="button" className="btn btn-quiet" onClick={() => dialogRef.current?.close()}>
+          <button type="button" className="btn btn-quiet" onClick={close}>
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={busy}>

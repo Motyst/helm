@@ -15,6 +15,9 @@ const queryClient = new QueryClient({
   },
 });
 
+// Dev-only handle for inspecting the cache from the console.
+if (import.meta.env.DEV) (window as unknown as { __helmQc: QueryClient }).__helmQc = queryClient;
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

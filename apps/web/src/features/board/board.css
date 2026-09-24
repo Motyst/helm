@@ -1,0 +1,291 @@
+.board {
+  flex: 1;
+  padding-top: 0.5rem;
+}
+
+.bins {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* ----- Bin: a tinted chart region per project ----- */
+
+.bin {
+  --bin: var(--contour);
+  --bin-tint: color-mix(in oklab, var(--bin) 9%, var(--water));
+  --bin-edge: color-mix(in oklab, var(--bin) 35%, var(--contour-faint));
+  background: var(--bin-tint);
+  border: 1.5px solid var(--bin-edge);
+  border-radius: var(--radius-panel);
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.bin.is-inbox {
+  --bin-tint: var(--water);
+  border-style: dashed;
+  border-color: var(--contour);
+}
+.bin.is-drop-target {
+  border-color: var(--bin);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--bin) 35%, transparent);
+}
+
+.bin-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+}
+.bin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+}
+.bin-toggle:hover {
+  background: color-mix(in oklab, var(--bin) 12%, transparent);
+}
+.bin-chevron {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: solid var(--ink-soft);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 140ms;
+}
+.bin.is-collapsed .bin-chevron {
+  transform: rotate(-45deg);
+}
+.bin-name {
+  font-family: var(--font-chart);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--step-2);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.bin-stats {
+  margin-left: auto;
+  flex: none;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.bin-tools {
+  display: flex;
+  flex: none;
+}
+.bin-tools .icon-btn {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.bin-body {
+  padding: 0 0.75rem 0.75rem;
+}
+.bin-empty {
+  padding: 0.25rem 0.5rem 0.5rem;
+  color: var(--ink-soft);
+}
+
+.bin-new {
+  min-height: 72px;
+  border: 1.5px dashed var(--contour);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.bin-new:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* ----- Priority groups ----- */
+
+.group + .group {
+  margin-top: 0.75rem;
+}
+.group-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0 0.25rem 0.35rem;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.group-count {
+  font-weight: 400;
+}
+.group-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0.5rem;
+  border-radius: 12px;
+}
+.group.is-empty .group-list {
+  min-height: 3rem;
+  border: 1.5px dashed var(--bin-edge);
+}
+.group.is-over .group-list {
+  background: color-mix(in oklab, var(--bin) 10%, transparent);
+}
+
+/* ----- Task cards ----- */
+
+.card-slot {
+  list-style: none;
+  border-radius: 12px;
+  touch-action: manipulation;
+  cursor: grab;
+}
+.card-slot:focus-visible {
+  outline: 3px solid var(--magenta);
+  outline-offset: 2px;
+}
+.card-slot.is-placeholder .card {
+  opacity: 0.35;
+}
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: var(--water);
+  border: 1px solid var(--contour-faint);
+}
+.card.is-overlay {
+  cursor: grabbing;
+  box-shadow: 0 18px 40px -16px rgb(8 20 30 / 0.55);
+  transform: rotate(-1deg);
+}
+.card.is-active {
+  border-color: var(--magenta);
+}
+
+/* Round check, like a buoy mark. */
+.card-check {
+  flex: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--contour);
+  background: transparent;
+  padding: 0;
+}
+.card-check:hover {
+  border-color: var(--ink);
+  background: radial-gradient(circle, var(--contour) 0 35%, transparent 38%);
+}
+.card.is-active .card-check {
+  border-color: var(--magenta);
+  box-shadow: 0 0 0 3px var(--magenta-soft);
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+.card-title {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--step-0);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.card-title:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--contour);
+  text-underline-offset: 3px;
+}
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.9rem;
+  margin-top: 0.2rem;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.card-meta:empty {
+  display: none;
+}
+.card-live {
+  color: var(--magenta);
+  font-weight: 700;
+}
+
+.card-subs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 28px;
+  padding: 0 0.4rem;
+  margin-left: -0.4rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+.card-subs-toggle:hover {
+  background: var(--shallows);
+}
+.progress-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+.progress-pips i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--contour);
+}
+.progress-pips i.on {
+  background: var(--contour);
+}
+
+.card-subs {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+.card-subs label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 34px;
+  cursor: pointer;
+}
+.card-subs input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--contour);
+}
+.card-subs .is-done span {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}

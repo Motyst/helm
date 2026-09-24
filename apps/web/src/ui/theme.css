@@ -109,6 +109,7 @@ p {
   background: transparent;
   font-weight: 700;
   font-size: var(--step-0);
+  white-space: nowrap;
   transition: background-color 120ms, border-color 120ms;
 }
 .btn:hover {

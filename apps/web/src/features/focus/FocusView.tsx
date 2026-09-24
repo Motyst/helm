@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { computeFocus, type Project, type Task, type TaskNode } from '@helm/shared';
+import { useEffect, useMemo, useState } from 'react';
+import { computeFocus, type Task, type TaskNode } from '@helm/shared';
 import { clockTime, formatMinutes, minutesSince } from '../../lib/format.ts';
 import { useProjects, useTaskAction, useTasks } from '../../lib/queries.ts';
+import { useCompleteTask } from '../../lib/useCompleteTask.ts';
+import { ProjectLabel, type ProjectMap } from '../../ui/ProjectLabel.tsx';
 import { useEditor } from '../task-editor/EditorContext.tsx';
 import { CourseLine } from './CourseLine.tsx';
 import './focus.css';
@@ -15,22 +17,12 @@ function useNow(intervalMs: number): number {
   return now;
 }
 
-type ProjectMap = Map<string, Project>;
-
-function ProjectLabel({ projectId, projects }: { projectId: string | null; projects: ProjectMap }) {
-  const p = projectId ? projects.get(projectId) : undefined;
-  return (
-    <span className="chart-label" style={p ? ({ '--swatch': p.color } as CSSProperties) : undefined}>
-      {p?.name ?? 'Inbox'}
-    </span>
-  );
-}
-
 export function FocusView() {
   const tasks = useTasks();
   const projects = useProjects();
   const action = useTaskAction();
   const editor = useEditor();
+  const complete = useCompleteTask();
   const now = useNow(30_000);
 
   const focus = useMemo(() => computeFocus(tasks.data ?? []), [tasks.data]);
@@ -61,6 +53,7 @@ export function FocusView() {
             now={now}
             onAction={run}
             onEdit={() => editor.openEdit(current.id)}
+            onComplete={() => void complete(current)}
           />
         ) : upNext ? (
           <div className="hero-idle">
@@ -69,6 +62,11 @@ export function FocusView() {
             <div className="hero-meta">
               <ProjectLabel projectId={upNext.projectId} projects={projectMap} />
               {upNext.estimateMinutes && <span>{formatMinutes(upNext.estimateMinutes)}</span>}
+              {upNext.progress && (
+                <span>
+                  {upNext.progress.done}/{upNext.progress.total} subtasks
+                </span>
+              )}
             </div>
             <div className="hero-actions">
               <button className="btn btn-primary" onClick={() => run(upNext.id, 'start')}>
@@ -149,6 +147,7 @@ function CurrentTask({
   now,
   onAction,
   onEdit,
+  onComplete,
 }: {
   task: TaskNode;
   activeSubtaskId: string | null;
@@ -156,6 +155,7 @@ function CurrentTask({
   now: number;
   onAction: (id: string, a: 'start' | 'stop' | 'complete' | 'reopen') => void;
   onEdit: () => void;
+  onComplete: () => void;
 }) {
   const active = activeSubtaskId ? task.subtasks.find((s) => s.id === activeSubtaskId) : undefined;
   const startedAt = (active ?? task).startedAt;
@@ -198,7 +198,7 @@ function CurrentTask({
       )}
 
       <div className="hero-actions">
-        <button className="btn btn-primary" onClick={() => onAction(task.id, 'complete')}>
+        <button className="btn btn-primary" onClick={onComplete}>
           Mark done
         </button>
         <button className="btn btn-quiet" onClick={() => onAction(workingId, 'stop')}>
