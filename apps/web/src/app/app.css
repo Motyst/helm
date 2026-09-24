@@ -191,3 +191,10 @@
     display: none;
   }
 }
+
+/* Room for the floating voice button on phones. */
+@media (max-width: 520px) {
+  .shell {
+    padding-bottom: 6rem;
+  }
+}

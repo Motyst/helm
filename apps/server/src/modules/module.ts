@@ -1,3 +1,4 @@
+import type { Providers } from '@helm/providers';
 import type { Hono } from 'hono';
 import type { Config } from '../config.ts';
 import type { EventBus } from '../core/events/bus.ts';
@@ -8,6 +9,8 @@ export interface ModuleContext {
   config: Config;
   services: Services;
   bus: EventBus;
+  /** AI adapters; a null slot means the feature is off (see `providers.reasons`). */
+  providers: Providers;
   /** Authenticated router mounted at /api/v1 — add module routes here. */
   api: Hono<AppEnv>;
   /** Root router — for things outside /api/v1 (e.g. /mcp). Handle auth yourself. */

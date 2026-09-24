@@ -1,4 +1,4 @@
-import type { Priority, Task, UpdateTaskInput } from '@helm/shared';
+import type { Priority, Task, TaskSource, TaskSuggestion, UpdateTaskInput } from '@helm/shared';
 import { api } from '../../lib/api.ts';
 
 export interface SubtaskDraft {
@@ -30,10 +30,24 @@ export function draftFrom(task: Task, subtasks: Task[]): TaskDraft {
   };
 }
 
+let voiceSeq = 0;
+
+/** A voice suggestion as an editable draft. Unstated priority falls back to Soon, like typed tasks. */
+export function draftFromSuggestion(s: TaskSuggestion): TaskDraft {
+  return {
+    title: s.title,
+    notes: s.notes ?? '',
+    projectId: s.projectId,
+    priority: s.priority ?? 'soon',
+    estimateMinutes: s.estimateMinutes,
+    subtasks: s.subtasks.map((title) => ({ key: `voice-${++voiceSeq}`, title, done: false })),
+  };
+}
+
 const cleanNotes = (notes: string) => (notes.trim() ? notes : null);
 
 /** Create a task with its subtasks in one request. Returns the saved parent. */
-export function createFromDraft(d: TaskDraft, parentTaskId?: string): Promise<Task> {
+export function createFromDraft(d: TaskDraft, parentTaskId?: string, source?: TaskSource): Promise<Task> {
   const subtasks = d.subtasks.filter((s) => s.title.trim()).map((s) => ({ title: s.title.trim() }));
   return api.createTask({
     title: d.title,
@@ -42,6 +56,7 @@ export function createFromDraft(d: TaskDraft, parentTaskId?: string): Promise<Ta
     priority: d.priority,
     estimateMinutes: d.estimateMinutes,
     parentTaskId: parentTaskId ?? null,
+    source,
     subtasks: subtasks.length ? subtasks : undefined,
   });
 }

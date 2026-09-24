@@ -177,7 +177,8 @@ describe('reads', () => {
     const done = services.tasks.create(o, { title: 'Done' });
     services.tasks.complete(o, c.id);
     services.tasks.complete(o, done.id);
-    expect(services.tasks.board(o).map((t) => t.title)).toEqual(['P', 'c']);
+    // Parent and child share a position (different scopes), so their order isn't defined.
+    expect(services.tasks.board(o).map((t) => t.title).sort()).toEqual(['P', 'c']);
   });
 
   it('focus returns current and up next', () => {

@@ -5,7 +5,7 @@ import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
 import { upsertTask, useCreateProject, useProjects, useTasks } from '../../lib/queries.ts';
 import type { EditorTarget } from './EditorContext.tsx';
-import { createFromDraft, draftFrom, saveDraft, type SubtaskDraft, type TaskDraft } from './save.ts';
+import { createFromDraft, draftFrom, draftFromSuggestion, saveDraft, type SubtaskDraft, type TaskDraft } from './save.ts';
 import './editor.css';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
@@ -15,7 +15,15 @@ const NEW_PROJECT = '__new__';
 let keySeq = 0;
 const newSub = (): SubtaskDraft => ({ key: `new-${++keySeq}`, title: '', done: false });
 
-export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose: () => void }) {
+interface Props {
+  target: EditorTarget;
+  /** Voice drafts waiting after this one. */
+  queued: number;
+  /** `next` = saved or skipped (show the next queued draft); otherwise close everything. */
+  onClose: (next: boolean) => void;
+}
+
+export function TaskDialog({ target, queued, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -34,20 +42,23 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
   const parentId = target.mode === 'create' ? target.defaults.parentTaskId : editing?.parentTaskId ?? undefined;
   const parent = parentId ? tasks.data?.find((t) => t.id === parentId) : undefined;
   const isSubtask = Boolean(parentId);
+  const voice = target.mode === 'create' ? target.defaults.voice : undefined;
 
   const [draft, setDraft] = useState<TaskDraft>(() =>
     editing
       ? draftFrom(editing, originalSubs)
-      : {
-          title: '',
-          notes: '',
-          projectId: target.mode === 'create' ? (target.defaults.projectId ?? null) : null,
-          priority: target.mode === 'create' ? (target.defaults.priority ?? 'soon') : 'soon',
-          estimateMinutes: null,
-          subtasks: [],
-        },
+      : voice
+        ? draftFromSuggestion(voice.suggestion)
+        : {
+            title: '',
+            notes: '',
+            projectId: target.mode === 'create' ? (target.defaults.projectId ?? null) : null,
+            priority: target.mode === 'create' ? (target.defaults.priority ?? 'soon') : 'soon',
+            estimateMinutes: null,
+            subtasks: [],
+          },
   );
-  const [unmatchedProject, setUnmatchedProject] = useState<string | null>(null);
+  const [unmatchedProject, setUnmatchedProject] = useState<string | null>(voice?.suggestion.unmatchedProject ?? null);
   const [newProjectName, setNewProjectName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -70,16 +81,20 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
     titleRef.current?.focus();
   }, []);
 
-  // Tell the parent directly; the native `close` event (kept for Escape) can arrive late or not at all.
-  const close = () => {
+  // Tell the parent directly; the native `close` event (kept for Escape) can arrive late or not at
+  // at all. Only once: a second call would skip a queued draft.
+  const closed = useRef(false);
+  const close = (next = false) => {
+    if (closed.current) return;
+    closed.current = true;
     dialogRef.current?.close();
-    onClose();
+    onClose(next);
   };
 
   // The task was deleted elsewhere while open.
   useEffect(() => {
-    if (target.mode === 'edit' && tasks.data && !editing) onClose();
-  }, [target, tasks.data, editing, onClose]);
+    if (target.mode === 'edit' && tasks.data && !editing) close();
+  });
 
   function onTitleChange(raw: string) {
     const q = parseQuickAdd(raw);
@@ -152,9 +167,9 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
       if (editing) {
         await saveDraft(editing, originalSubs, final);
       } else {
-        upsertTask(qc, await createFromDraft(final, parentId));
+        upsertTask(qc, await createFromDraft(final, parentId, voice ? 'voice' : undefined));
       }
-      close();
+      close(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t save. Check that the server is running.');
     } finally {
@@ -178,7 +193,17 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
     }
   }
 
-  const heading = editing ? (isSubtask ? 'Edit subtask' : 'Edit task') : isSubtask ? 'New subtask' : 'New task';
+  const heading = editing
+    ? isSubtask
+      ? 'Edit subtask'
+      : 'Edit task'
+    : isSubtask
+      ? 'New subtask'
+      : voice
+        ? voice.total > 1
+          ? `Task from voice, ${voice.index} of ${voice.total}`
+          : 'Task from voice'
+        : 'New task';
   const estimateIsCustom = draft.estimateMinutes !== null && !ESTIMATES.includes(draft.estimateMinutes);
 
   return (
@@ -186,7 +211,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
       ref={dialogRef}
       className="editor"
       aria-labelledby="editor-heading"
-      onClose={onClose}
+      onClose={() => close()}
       onClick={(e) => {
         if (e.target === dialogRef.current) close(); // backdrop click
       }}
@@ -204,12 +229,29 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
       >
         <header className="editor-head">
           <h2 id="editor-heading">{heading}</h2>
-          <button type="button" className="icon-btn" aria-label="Close" onClick={close}>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={() => close()}>
             ✕
           </button>
         </header>
 
         {parent && <p className="editor-parent">Part of {parent.title}</p>}
+        {voice && (
+          <div className="editor-voice">
+            <p>
+              <span className="editor-voice-label">You said</span> <q>{voice.transcript}</q>
+            </p>
+            {voice.notice ? (
+              <p className="editor-voice-note">{voice.notice}</p>
+            ) : (
+              !voice.parsed && (
+                <p className="editor-voice-note">
+                  What you said is the title. Add an OpenAI key to have Helm fill in the project, priority and
+                  estimate.
+                </p>
+              )
+            )}
+          </div>
+        )}
 
         <div className="field">
           <label htmlFor={ids.title} className="visually-hidden">
@@ -228,7 +270,7 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
           {parsed.title !== draft.title.trim() && parsed.title && (
             <p className="field-hint">Saves as “{parsed.title}”</p>
           )}
-          {!draft.title && !editing && (
+          {!draft.title && !editing && !voice && (
             <p className="field-hint">Shorthand works here: #project, !now, ~30m</p>
           )}
           {unmatchedProject && (
@@ -430,8 +472,8 @@ export function TaskDialog({ target, onClose }: { target: EditorTarget; onClose:
             </button>
           )}
           <span className="spacer" />
-          <button type="button" className="btn btn-quiet" onClick={close}>
-            Cancel
+          <button type="button" className="btn btn-quiet" onClick={() => close(true)}>
+            {queued ? 'Skip' : 'Cancel'}
           </button>
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {editing ? 'Save' : isSubtask ? 'Add subtask' : 'Add task'}

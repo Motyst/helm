@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BoardView } from '../features/board/BoardView.tsx';
 import { DoneView } from '../features/done/DoneView.tsx';
 import { FocusView } from '../features/focus/FocusView.tsx';
 import { SettingsView } from '../features/settings/SettingsView.tsx';
 import { EditorProvider, useEditor } from '../features/task-editor/EditorContext.tsx';
+import { MicIcon, VoiceCapture } from '../features/voice/VoiceCapture.tsx';
 import { api, ApiError } from '../lib/api.ts';
 import { clearUserData, keys } from '../lib/queries.ts';
 import { hrefFor, useRoute, type Route } from '../lib/route.ts';
@@ -85,9 +86,10 @@ function useMutationErrorToasts() {
 function Shell({ sync }: { sync: SyncState }) {
   const editor = useEditor();
   const route = useRoute();
+  const [voiceOpen, setVoiceOpen] = useState(false);
   useMutationErrorToasts();
 
-  // Single-key shortcuts: N new task, F focus, B board, D done (not while typing or in a dialog).
+  // Single-key shortcuts: N new task, V voice, F focus, B board, D done (not while typing or in a dialog).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
@@ -95,6 +97,11 @@ function Shell({ sync }: { sync: SyncState }) {
       if (e.key === 'n') {
         e.preventDefault();
         editor.openCreate();
+        return;
+      }
+      if (e.key === 'v') {
+        e.preventDefault();
+        setVoiceOpen(true);
         return;
       }
       const nav = NAV.find((n) => n.key === e.key);
@@ -142,6 +149,15 @@ function Shell({ sync }: { sync: SyncState }) {
               <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.6" />
             </svg>
           </a>
+          <button
+            className="topbar-icon voice-btn"
+            onClick={() => setVoiceOpen(true)}
+            aria-label="Add a task by voice"
+            title="Add a task by voice (V)"
+            aria-keyshortcuts="v"
+          >
+            <MicIcon />
+          </button>
           <button className="btn topbar-add" onClick={() => editor.openCreate()} aria-keyshortcuts="n">
             <span className="topbar-add-plus" aria-hidden>
               +
@@ -158,6 +174,15 @@ function Shell({ sync }: { sync: SyncState }) {
         <SettingsView />
       ) : (
         <FocusView />
+      )}
+      {voiceOpen && (
+        <VoiceCapture
+          onResult={(r) => {
+            setVoiceOpen(false);
+            editor.openSuggestions(r);
+          }}
+          onClose={() => setVoiceOpen(false)}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { NO_PROVIDERS, type Providers } from '@helm/providers';
 import type { Config } from './config.ts';
 import { HelmError, type ErrorCode } from './core/errors.ts';
 import { eventRoutes } from './core/events/sse.ts';
@@ -17,6 +18,10 @@ const STATUS: Record<ErrorCode, ContentfulStatusCode> = {
   forbidden: 403,
   not_found: 404,
   conflict: 409,
+  too_large: 413,
+  unsupported_media: 415,
+  unavailable: 503,
+  upstream: 502,
 };
 
 export interface AppDeps {
@@ -24,6 +29,8 @@ export interface AppDeps {
   ctx: ServiceContext;
   services: Services;
   modules?: HelmModule[];
+  /** AI adapters for modules (voice, assistant). Defaults to none. */
+  providers?: Providers;
   resolveToken?: TokenResolver;
 }
 
@@ -32,6 +39,7 @@ export async function createApp({
   ctx,
   services,
   modules = [],
+  providers = NO_PROVIDERS,
   resolveToken = (secret) => services.tokens.resolve(secret),
 }: AppDeps) {
   const app = new Hono();
@@ -60,7 +68,7 @@ export async function createApp({
   api.route('/', eventRoutes(ctx.db, ctx.bus));
 
   for (const m of modules) {
-    await m.register({ config, services, bus: ctx.bus, api, root: app });
+    await m.register({ config, services, bus: ctx.bus, providers, api, root: app });
   }
 
   app.route('/api/v1', api);

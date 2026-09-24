@@ -192,6 +192,50 @@ export interface CreatedToken {
   secret: string;
 }
 
+// ---------- Voice ----------
+
+/** What the server can do with voice; the app falls back to the browser's speech recognition. */
+export interface VoiceStatus {
+  /** Server can turn audio into text. */
+  transcribe: boolean;
+  /** Server can turn text into task fields with an AI model. */
+  parse: boolean;
+  /** Why a feature is off, in words for the user. */
+  reasons: { transcribe?: string; parse?: string };
+  /** Longest recording the server accepts. */
+  maxSeconds: number;
+}
+
+export const VoiceTextInput = z
+  .object({
+    text: z.string().trim().min(1, 'text is required').max(5000),
+  })
+  .strict();
+export type VoiceTextInput = z.input<typeof VoiceTextInput>;
+
+/** A task suggested from speech. Nothing is saved until the user confirms it. */
+export interface TaskSuggestion {
+  title: string;
+  notes: string | null;
+  projectId: string | null;
+  /** A project name that was heard but doesn't exist yet. */
+  unmatchedProject: string | null;
+  /** null = not said. */
+  priority: Priority | null;
+  estimateMinutes: number | null;
+  subtasks: string[];
+}
+
+export interface VoiceParseResult {
+  transcript: string;
+  /** At least one. */
+  tasks: TaskSuggestion[];
+  /** false = no AI model (or it failed); the transcript became the title as is. */
+  parsed: boolean;
+  /** Why parsing was skipped when a model is set up but failed, for the user. */
+  notice?: string;
+}
+
 // ---------- Realtime ----------
 
 export const EVENT_ENTITIES = ['task', 'project', 'token'] as const;

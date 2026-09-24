@@ -32,6 +32,25 @@ bar in Chrome or Edge). The installed app:
 Installing needs a secure origin: `localhost` works; for a phone, serve it over HTTPS
 (for example `tailscale serve`) and set `HELM_COOKIE_SECURE=true`.
 
+## Voice input
+
+Press the microphone (or V), say the task, press Done. Helm transcribes it, fills in the
+title, project, priority, estimate and subtasks, and opens the task for you to check. Nothing is
+saved until you press Add task. Several separate to-dos in one recording become one draft each.
+
+- With `OPENAI_API_KEY` set, audio goes to OpenAI for transcription (`HELM_STT_MODEL`) and the
+  text to `HELM_LLM_MODEL` for the fields.
+- Without a key, the browser's own speech recognition is used where it exists (Chrome sends the
+  audio to Google; Safari works on the device), and what you said becomes the title as is.
+- The microphone only works on a secure origin: `localhost`, or HTTPS on a phone.
+
+Providers sit behind small interfaces in `packages/providers` (`LlmProvider`, `SttProvider`).
+Choose them with `HELM_LLM_PROVIDER` and `HELM_STT_PROVIDER` (`openai` or `none`);
+`OPENAI_BASE_URL` points the OpenAI adapter at any compatible API.
+
+`POST /api/v1/voice/parse` takes audio (`Content-Type: audio/webm`, `audio/mp4`, ...) or JSON
+`{"text": "..."}` and returns suggestions without saving them. Read-only tokens can't use it.
+
 ## Connect AI assistants
 
 In Helm, open Settings (the cog) and create a token for each assistant or script. Choose read
@@ -57,10 +76,11 @@ plain token yet.
 ## Layout
 
 ```
-apps/server     Hono API, SSE stream, services (all rules live here), modules
-apps/web        React PWA
-packages/shared zod schemas, types, pure logic (tree, focus)
-packages/db     Drizzle schema + SQLite migrations
+apps/server         Hono API, SSE stream, services (all rules live here), modules
+apps/web            React PWA
+packages/shared     zod schemas, types, pure logic (tree, focus)
+packages/db         Drizzle schema + SQLite migrations
+packages/providers  LLM and speech-to-text adapters (OpenAI)
 ```
 
 Every write goes through `apps/server/src/core/services`. REST, MCP and AI modules call the

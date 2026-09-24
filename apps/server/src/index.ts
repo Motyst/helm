@@ -3,18 +3,23 @@ import { join, resolve } from 'node:path';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { openDb } from '@helm/db';
+import { createProviders } from '@helm/providers';
 import { createApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { EventBus } from './core/events/bus.ts';
 import { createServices, type ServiceContext } from './core/services/index.ts';
 import { mcpModule } from './modules/mcp/index.ts';
+import { voiceModule } from './modules/voice/index.ts';
 
 const config = loadConfig();
 const { db, close } = openDb({ path: config.dbPath });
 const ctx: ServiceContext = { db, bus: new EventBus(), rules: config.rules, now: () => new Date() };
 const services = createServices(ctx);
 
-const app = await createApp({ config, ctx, services, modules: [mcpModule] });
+const providers = createProviders(config.ai);
+for (const reason of Object.values(providers.reasons)) if (reason) console.log(`AI: ${reason}`);
+
+const app = await createApp({ config, ctx, services, providers, modules: [mcpModule, voiceModule] });
 
 // Production: serve the built PWA and fall back to index.html for client-side routes.
 const webRoot = config.webDist ? resolve(config.webDist) : null;

@@ -34,6 +34,7 @@ export const testConfig: Config = {
   sessionSecret: 'test-secret-test-secret-test-secret',
   cookieSecure: false,
   rules: { inProgressLimit: 1, maxSubtaskDepth: 1 },
+  ai: { llm: { provider: 'none', model: '' }, stt: { provider: 'none', model: '' }, openai: {} },
 };
 
 export function token(p: Partial<Extract<Principal, { kind: 'token' }>> = {}): Principal {

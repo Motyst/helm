@@ -1,6 +1,17 @@
 import type { z } from 'zod';
 
-export type ErrorCode = 'invalid' | 'unauthorized' | 'forbidden' | 'not_found' | 'conflict';
+export type ErrorCode =
+  | 'invalid'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'not_found'
+  | 'conflict'
+  | 'too_large'
+  | 'unsupported_media'
+  /** A feature that isn't configured (e.g. no AI key). */
+  | 'unavailable'
+  /** An outside service (AI provider) failed. */
+  | 'upstream';
 
 export class HelmError extends Error {
   constructor(

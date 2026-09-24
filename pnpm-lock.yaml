@@ -13,6 +13,9 @@ importers:
       '@helm/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@helm/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@helm/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -136,6 +139,22 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+
+  packages/providers:
+    dependencies:
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
 
   packages/shared:
     dependencies:

@@ -10,6 +10,8 @@ import type {
   Task,
   UpdateProjectInput,
   UpdateTaskInput,
+  VoiceParseResult,
+  VoiceStatus,
 } from '@helm/shared';
 
 export class ApiError extends Error {
@@ -22,16 +24,20 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+/** `body` is sent as JSON, except a Blob, which goes as is with its own type (audio). */
+async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   let res: Response;
+  const raw = body instanceof Blob;
   try {
     res = await fetch(`/api/v1${path}`, {
       method,
       credentials: 'same-origin',
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: body === undefined ? undefined : { 'content-type': raw ? body.type : 'application/json' },
+      body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
+      signal,
     });
-  } catch {
+  } catch (e) {
+    if (signal?.aborted) throw e;
     throw new ApiError(0, 'unreachable', 'Can’t reach Helm. Check your connection and try again.');
   }
   const data = res.headers.get('content-type')?.includes('json') ? await res.json() : null;
@@ -82,4 +88,14 @@ export const api = {
   tokens: () => request<ApiToken[]>('GET', '/tokens'),
   createToken: (input: CreateTokenInput) => request<CreatedToken>('POST', '/tokens', input),
   revokeToken: (id: string) => request<ApiToken>('DELETE', `/tokens/${id}`),
+
+  voiceStatus: () => request<VoiceStatus>('GET', '/voice'),
+  /** Audio from the recorder, or text from the browser's own speech recognition. */
+  voiceParse: (input: Blob | string, signal?: AbortSignal) =>
+    request<VoiceParseResult>(
+      'POST',
+      `/voice/parse${queryString({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone })}`,
+      typeof input === 'string' ? { text: input } : input,
+      signal,
+    ),
 };

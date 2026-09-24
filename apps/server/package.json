@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@helm/db": "workspace:*",
+    "@helm/providers": "workspace:*",
     "@helm/shared": "workspace:*",
     "@hono/node-server": "^2.1.1",
     "@modelcontextprotocol/sdk": "^1.30.1",

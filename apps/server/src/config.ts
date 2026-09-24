@@ -1,3 +1,4 @@
+import type { ProviderConfig } from '@helm/providers';
 import { z } from 'zod';
 
 const Env = z.object({
@@ -9,6 +10,14 @@ const Env = z.object({
   HELM_IN_PROGRESS_LIMIT: z.coerce.number().int().min(0).default(1),
   HELM_MAX_SUBTASK_DEPTH: z.coerce.number().int().min(0).default(1),
   HELM_WEB_DIST: z.string().optional(),
+  HELM_LLM_PROVIDER: z.string().trim().default('openai'),
+  HELM_LLM_MODEL: z.string().trim().default('gpt-5-mini'),
+  // Absent = low (quick parses on gpt-5 models); set it empty for models without reasoning.
+  HELM_LLM_REASONING_EFFORT: z.string().trim().default('low'),
+  HELM_STT_PROVIDER: z.string().trim().default('openai'),
+  HELM_STT_MODEL: z.string().trim().default('gpt-4o-mini-transcribe'),
+  OPENAI_API_KEY: z.string().trim().optional(),
+  OPENAI_BASE_URL: z.url().optional().or(z.literal('')),
 });
 
 export interface TaskRules {
@@ -27,6 +36,8 @@ export interface Config {
   rules: TaskRules;
   /** Built web app to serve statically (production). */
   webDist?: string;
+  /** Which AI adapters to use; see @helm/providers. */
+  ai: ProviderConfig;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -44,5 +55,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     cookieSecure: e.HELM_COOKIE_SECURE,
     rules: { inProgressLimit: e.HELM_IN_PROGRESS_LIMIT, maxSubtaskDepth: e.HELM_MAX_SUBTASK_DEPTH },
     webDist: e.HELM_WEB_DIST,
+    ai: {
+      llm: {
+        provider: e.HELM_LLM_PROVIDER,
+        model: e.HELM_LLM_MODEL,
+        reasoningEffort: e.HELM_LLM_REASONING_EFFORT || undefined,
+      },
+      stt: { provider: e.HELM_STT_PROVIDER, model: e.HELM_STT_MODEL },
+      openai: { apiKey: e.OPENAI_API_KEY || undefined, baseUrl: e.OPENAI_BASE_URL || undefined },
+    },
   };
 }
