@@ -73,10 +73,10 @@
   background: #3fae84;
 }
 .sync-offline {
-  color: var(--magenta);
+  color: var(--accent);
 }
 .sync-offline::before {
-  background: var(--magenta);
+  background: var(--accent);
 }
 
 /* ----- Login ----- */
@@ -119,7 +119,7 @@
   margin-top: 0.5rem;
 }
 .login-error {
-  color: var(--magenta);
+  color: var(--accent);
 }
 
 /* Phones: tighter top bar. Last in the file so it wins over the base rules above. */
@@ -132,11 +132,14 @@
   place-items: center;
   width: 44px;
   height: 44px;
+  border: 0;
   border-radius: 50%;
+  background: transparent;
   color: var(--ink-soft);
 }
 .topbar-icon:hover,
-.topbar-icon[aria-current='page'] {
+.topbar-icon[aria-current='page'],
+.topbar-icon[aria-expanded='true'] {
   color: var(--ink);
   background: var(--shallows);
 }

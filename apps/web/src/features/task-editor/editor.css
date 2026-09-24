@@ -63,9 +63,9 @@
   gap: 0.35rem;
   margin-top: -0.4rem;
   padding: 0.6rem 0.85rem;
-  border-left: 3px solid var(--magenta);
+  border-left: 3px solid var(--accent);
   border-radius: 0 10px 10px 0;
-  background: var(--magenta-soft);
+  background: var(--accent-soft);
 }
 .editor-voice q {
   font-family: var(--font-chart);
@@ -95,7 +95,7 @@
 }
 .editor-title:focus {
   outline: none;
-  border-bottom-color: var(--magenta);
+  border-bottom-color: var(--accent);
 }
 .editor-title::placeholder {
   color: var(--contour);
@@ -206,12 +206,12 @@
   font-weight: 700;
 }
 .seg-now input:checked + span {
-  background: var(--magenta);
-  border-color: var(--magenta);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .seg input:focus-visible + span,
 .chip input:focus-visible + span {
-  outline: 3px solid var(--magenta);
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -244,7 +244,7 @@
   outline: none;
 }
 .chip-input:focus-within {
-  outline: 3px solid var(--magenta);
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -280,7 +280,7 @@
   outline: none;
 }
 .sub-row:focus-within {
-  border-bottom-color: var(--magenta);
+  border-bottom-color: var(--accent);
 }
 .sub-row input.is-done {
   color: var(--ink-soft);
@@ -316,13 +316,13 @@
   text-underline-offset: 3px;
 }
 .link-btn:hover {
-  text-decoration-color: var(--magenta);
+  text-decoration-color: var(--accent);
 }
 
 /* ----- Footer ----- */
 
 .editor-error {
-  color: var(--magenta);
+  color: var(--accent);
   font-weight: 700;
 }
 /* Stays reachable while the form scrolls (long subtask lists, phones). */
@@ -343,8 +343,8 @@
   flex: 1;
 }
 .btn-danger:hover {
-  color: var(--magenta);
-  border-color: var(--magenta);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ----- Project dialog ----- */
@@ -377,6 +377,6 @@
     0 0 0 5px var(--ink);
 }
 .swatch:has(input:focus-visible) {
-  outline: 3px solid var(--magenta);
+  outline: 3px solid var(--accent);
   outline-offset: 5px;
 }

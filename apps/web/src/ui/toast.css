@@ -23,8 +23,8 @@
   padding: 0 1rem;
   border: 0;
   border-radius: var(--radius-control);
-  background: var(--magenta);
-  color: #fff;
+  background: var(--accent);
+  color: var(--water);
   font-weight: 700;
 }
 @keyframes toast-in {

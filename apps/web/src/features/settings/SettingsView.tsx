@@ -6,6 +6,7 @@ import { relativeTime } from '../../lib/format.ts';
 import { clearUserData, keys, useCreateToken, useProjects, useRevokeToken, useTokens } from '../../lib/queries.ts';
 import '../task-editor/editor.css';
 import './settings.css';
+import { ThemeSection } from './ThemePicker.tsx';
 
 const ACCESS: { value: TokenScope; label: string; hint: string }[] = [
   { value: 'read', label: 'Read only', hint: 'Sees tasks, projects and the done log.' },
@@ -40,6 +41,8 @@ export function SettingsView() {
       </section>
 
       <TokenList />
+
+      <ThemeSection />
 
       <SessionSection />
     </main>

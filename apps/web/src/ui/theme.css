@@ -1,15 +1,103 @@
-/* Palette drawn from nautical charts: fog-white water, shallows tint, navy ink,
-   depth-contour blue, and chart magenta (used on real charts for lights & buoys). */
-:root {
+/* Themes. Each sets the same eight colors: page (water), raised surfaces (shallows), text (ink,
+   ink-soft), lines (contour, contour-faint) and one accent for focus, live and primary actions.
+   Selectors aren't tied to :root, so a theme preview can wear its own theme (see ThemePicker).
+   `data-theme` is set on <html> before first paint by the script in index.html. */
+
+/* Harbor, the default: nautical charts. Fog-white water, shallows tint, navy ink,
+   depth-contour blue and chart magenta (used on real charts for lights & buoys).
+   Follows the device between day and night. */
+:root,
+[data-theme='harbor'] {
   --water: #eef3f4;
   --shallows: #d3e4ea;
   --ink: #18293a;
   --ink-soft: #4b6072;
   --contour: #7e9fb0;
   --contour-faint: #c3d4db;
-  --magenta: #b3307a;
-  --magenta-soft: #b3307a26;
+  --accent: #b3307a;
+  --accent-soft: #b3307a26;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]),
+  [data-theme='harbor'] {
+    --water: #0f1c27;
+    --shallows: #17293a;
+    --ink: #d5e1e7;
+    --ink-soft: #8ea5b4;
+    --contour: #3e5b6e;
+    --contour-faint: #213646;
+    --accent: #e26aa3;
+    --accent-soft: #e26aa32e;
+  }
+}
 
+/* Desert: dune sand, sandstone, dark umber and red-rock rust. */
+[data-theme='desert'] {
+  --water: #f5ecdc;
+  --shallows: #eadbc2;
+  --ink: #3b2619;
+  --ink-soft: #6f513b;
+  --contour: #b8916a;
+  --contour-faint: #e2cfb0;
+  --accent: #a53f1f;
+  --accent-soft: #a53f1f26;
+  color-scheme: light;
+}
+
+/* Beach: sea foam, deep water and coral. */
+[data-theme='beach'] {
+  --water: #eef6f3;
+  --shallows: #d3ebe5;
+  --ink: #0e3440;
+  --ink-soft: #3d626b;
+  --contour: #6fa3a5;
+  --contour-faint: #c2e0da;
+  --accent: #bb3f37;
+  --accent-soft: #bb3f3726;
+  color-scheme: light;
+}
+
+/* Deep forest: dark pine and moss, with a firefly glow. */
+[data-theme='forest'] {
+  --water: #0f1a14;
+  --shallows: #17271e;
+  --ink: #dce6d5;
+  --ink-soft: #93aa92;
+  --contour: #46664f;
+  --contour-faint: #233a2c;
+  --accent: #e2b650;
+  --accent-soft: #e2b6502e;
+  color-scheme: dark;
+}
+
+/* Prairie: pale wheat, sod-dark olive and a bluebonnet sky. */
+[data-theme='prairie'] {
+  --water: #f6f2de;
+  --shallows: #e9e2bf;
+  --ink: #2b3020;
+  --ink-soft: #5b6144;
+  --contour: #9d9b69;
+  --contour-faint: #ddd6ae;
+  --accent: #3f4fa3;
+  --accent-soft: #3f4fa326;
+  color-scheme: light;
+}
+
+/* Night: plain dark with a moonlight accent, for late hours or a dim room. */
+[data-theme='night'] {
+  --water: #131418;
+  --shallows: #1c1e23;
+  --ink: #e6e3dc;
+  --ink-soft: #9d9a93;
+  --contour: #52565f;
+  --contour-faint: #2b2e34;
+  --accent: #9fb4ee;
+  --accent-soft: #9fb4ee2e;
+  color-scheme: dark;
+}
+
+:root {
   /* Self-hosted (see main.tsx) so the installed app renders the same offline. */
   --font-sans: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
   --font-chart: 'Newsreader Variable', 'Newsreader', Georgia, serif;
@@ -25,31 +113,6 @@
   --gutter: clamp(1rem, 0.5rem + 2.5vw, 3rem);
   --radius-control: 999px;
   --radius-panel: 14px;
-
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --water: #0f1c27;
-    --shallows: #17293a;
-    --ink: #d5e1e7;
-    --ink-soft: #8ea5b4;
-    --contour: #3e5b6e;
-    --contour-faint: #213646;
-    --magenta: #e26aa3;
-    --magenta-soft: #e26aa32e;
-  }
-}
-:root[data-theme='dark'] {
-  --water: #0f1c27;
-  --shallows: #17293a;
-  --ink: #d5e1e7;
-  --ink-soft: #8ea5b4;
-  --contour: #3e5b6e;
-  --contour-faint: #213646;
-  --magenta: #e26aa3;
-  --magenta-soft: #e26aa32e;
 }
 
 *,
@@ -77,7 +140,7 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid var(--magenta);
+  outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -126,8 +189,8 @@ p {
   color: var(--water);
 }
 .btn-primary:hover {
-  background: var(--magenta);
-  border-color: var(--magenta);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .btn-quiet {
   border-color: transparent;

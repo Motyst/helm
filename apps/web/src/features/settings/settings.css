@@ -39,7 +39,7 @@
 }
 .settings-input:focus {
   outline: none;
-  border-color: var(--magenta);
+  border-color: var(--accent);
 }
 
 /* ----- New token ----- */
@@ -104,9 +104,9 @@
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
-  border: 1.5px solid var(--magenta);
+  border: 1.5px solid var(--accent);
   border-radius: var(--radius-panel);
-  background: var(--magenta-soft);
+  background: var(--accent-soft);
 }
 .token-warning {
   font-weight: 700;
@@ -192,4 +192,90 @@
   .token-row .btn {
     margin-left: -1.25rem;
   }
+}
+
+/* ----- Theme ----- */
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+  gap: 1rem;
+}
+.theme-option {
+  display: grid;
+  gap: 0.15rem;
+  align-content: start;
+  padding: 0.6rem 0.6rem 0.8rem;
+  border: 1.5px solid var(--contour-faint);
+  border-radius: var(--radius-panel);
+  cursor: pointer;
+}
+.theme-option:hover {
+  border-color: var(--contour);
+}
+.theme-option:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+.theme-option:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.theme-name {
+  margin-top: 0.5rem;
+  font-weight: 700;
+}
+.theme-option:has(input:checked) .theme-name::after {
+  content: ' ✓';
+  color: var(--accent);
+}
+.theme-hint {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+/* The swatch wears its own theme's variables (see theme.css). */
+.theme-swatch {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: 9px;
+  background: var(--water);
+  border: 1px solid var(--contour-faint);
+}
+.sw-heading {
+  width: 55%;
+  height: 0.6rem;
+  border-radius: 3px;
+  background: var(--ink);
+}
+.sw-task {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  background: var(--shallows);
+}
+.sw-task::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--contour);
+}
+.sw-now::before {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.sw-task > span {
+  width: 70%;
+  height: 0.3rem;
+  border-radius: 2px;
+  background: var(--ink-soft);
+}
+.sw-now > span {
+  width: 50%;
 }

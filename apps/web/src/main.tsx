@@ -10,6 +10,9 @@ import { App } from './app/App.tsx';
 import { ApiError } from './lib/api.ts';
 import { PERSISTED_KEYS, clearUserData, keys } from './lib/queries.ts';
 import './ui/theme.css';
+import { startThemes } from './ui/themes.ts';
+
+startThemes();
 
 const queryClient: QueryClient = new QueryClient({
   queryCache: new QueryCache({

@@ -80,7 +80,7 @@
   color: var(--ink-soft);
 }
 .assistant-error {
-  color: var(--magenta);
+  color: var(--accent);
   font-weight: 700;
 }
 .assistant-working {
@@ -138,7 +138,7 @@
   font-style: italic;
   font-size: var(--step-1);
   line-height: 1.2;
-  color: var(--magenta);
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .order-main {
@@ -157,7 +157,7 @@
   font-size: var(--step--1);
 }
 .order-flag {
-  color: var(--magenta);
+  color: var(--accent);
   font-weight: 700;
 }
 .order-reason {
@@ -249,9 +249,9 @@
   gap: 0.6rem;
   justify-items: start;
   padding: 0.85rem 1rem;
-  border-left: 3px solid var(--magenta);
+  border-left: 3px solid var(--accent);
   border-radius: 0 12px 12px 0;
-  background: var(--magenta-soft);
+  background: var(--accent-soft);
   white-space: normal;
 }
 .proposal-title {
@@ -286,7 +286,7 @@
   color: var(--ink-soft);
 }
 .proposal-err {
-  color: var(--magenta);
+  color: var(--accent);
 }
 
 .chat-compose {
@@ -312,7 +312,7 @@
 }
 .chat-compose textarea:focus {
   outline: none;
-  border-color: var(--magenta);
+  border-color: var(--accent);
 }
 .assistant-new {
   font-size: var(--step--1);

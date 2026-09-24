@@ -155,7 +155,7 @@
   cursor: grab;
 }
 .card-slot:focus-visible {
-  outline: 3px solid var(--magenta);
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 .card-slot.is-placeholder .card {
@@ -177,7 +177,7 @@
   transform: rotate(-1deg);
 }
 .card.is-active {
-  border-color: var(--magenta);
+  border-color: var(--accent);
 }
 
 /* Round check, like a buoy mark. */
@@ -196,8 +196,8 @@
   background: radial-gradient(circle, var(--contour) 0 35%, transparent 38%);
 }
 .card.is-active .card-check {
-  border-color: var(--magenta);
-  box-shadow: 0 0 0 3px var(--magenta-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .card-body {
@@ -234,7 +234,7 @@
   display: none;
 }
 .card-live {
-  color: var(--magenta);
+  color: var(--accent);
   font-weight: 700;
 }
 
