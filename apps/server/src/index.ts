@@ -7,13 +7,14 @@ import { createApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { EventBus } from './core/events/bus.ts';
 import { createServices, type ServiceContext } from './core/services/index.ts';
+import { mcpModule } from './modules/mcp/index.ts';
 
 const config = loadConfig();
 const { db, close } = openDb({ path: config.dbPath });
 const ctx: ServiceContext = { db, bus: new EventBus(), rules: config.rules, now: () => new Date() };
 const services = createServices(ctx);
 
-const app = await createApp({ config, ctx, services, modules: [] });
+const app = await createApp({ config, ctx, services, modules: [mcpModule] });
 
 // Production: serve the built PWA and fall back to index.html for client-side routes.
 const webRoot = config.webDist ? resolve(config.webDist) : null;

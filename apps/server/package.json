@@ -14,6 +14,7 @@
     "@helm/db": "workspace:*",
     "@helm/shared": "workspace:*",
     "@hono/node-server": "^2.1.1",
+    "@modelcontextprotocol/sdk": "^1.30.1",
     "drizzle-orm": "^0.45.3",
     "fractional-indexing": "^4.0.0",
     "hono": "^4.13.8",

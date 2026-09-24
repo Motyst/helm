@@ -1,5 +1,8 @@
 import type {
+  ApiToken,
+  CreatedToken,
   CreateProjectInput,
+  CreateTokenInput,
   CreateTaskInput,
   DoneLogPage,
   MoveTaskInput,
@@ -75,4 +78,8 @@ export const api = {
   createProject: (input: CreateProjectInput) => request<Project>('POST', '/projects', input),
   updateProject: (id: string, patch: UpdateProjectInput) => request<Project>('PATCH', `/projects/${id}`, patch),
   archiveProject: (id: string) => request<Project>('DELETE', `/projects/${id}`),
+
+  tokens: () => request<ApiToken[]>('GET', '/tokens'),
+  createToken: (input: CreateTokenInput) => request<CreatedToken>('POST', '/tokens', input),
+  revokeToken: (id: string) => request<ApiToken>('DELETE', `/tokens/${id}`),
 };

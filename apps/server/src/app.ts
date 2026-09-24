@@ -27,7 +27,13 @@ export interface AppDeps {
   resolveToken?: TokenResolver;
 }
 
-export async function createApp({ config, ctx, services, modules = [], resolveToken = () => null }: AppDeps) {
+export async function createApp({
+  config,
+  ctx,
+  services,
+  modules = [],
+  resolveToken = (secret) => services.tokens.resolve(secret),
+}: AppDeps) {
   const app = new Hono();
 
   app.onError((err, c) => {

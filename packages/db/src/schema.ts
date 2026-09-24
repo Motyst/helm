@@ -66,7 +66,7 @@ export const events = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     at: ts('at').notNull(),
     actor: text('actor').notNull(),
-    entity: text('entity', { enum: ['task', 'project'] }).notNull(),
+    entity: text('entity', { enum: ['task', 'project', 'token'] }).notNull(),
     entityId: text('entity_id').notNull(),
     /** Project the entity belongs to (for scope-filtering the stream); null = Inbox / not applicable. */
     projectId: text('project_id'),

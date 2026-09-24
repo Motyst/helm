@@ -127,10 +127,30 @@
   display: none;
 }
 
+.topbar-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--ink-soft);
+}
+.topbar-icon:hover,
+.topbar-icon[aria-current='page'] {
+  color: var(--ink);
+  background: var(--shallows);
+}
+.topbar-icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
 @media (max-width: 520px) {
-  .topbar,
-  .topbar-end {
+  .topbar {
     gap: 0.6rem;
+  }
+  .topbar-end {
+    gap: 0.25rem;
   }
   .nav {
     margin-left: 0;
@@ -162,5 +182,12 @@
   .sync {
     font-size: 0;
     gap: 0;
+  }
+}
+
+/* Smallest phones: the tabs carry the navigation, so the wordmark gives way. */
+@media (max-width: 420px) {
+  .topbar .wordmark {
+    display: none;
   }
 }

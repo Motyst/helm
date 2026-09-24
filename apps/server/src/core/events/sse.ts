@@ -13,8 +13,14 @@ const MAX_REPLAY = 500;
 const PING_MS = 25_000;
 
 function visibleTo(p: Principal, e: HelmEvent): boolean {
+  if (e.entity === 'token') return p.kind === 'owner';
   const projectId = e.entity === 'task' ? (e.data as Task).projectId : e.entityId;
   return canRead(p, projectId);
+}
+
+/** A stream opened with a token ends as soon as that token is revoked. */
+function revokes(p: Principal, e: HelmEvent): boolean {
+  return p.kind === 'token' && e.entity === 'token' && e.action === 'revoked' && e.entityId === p.tokenId;
 }
 
 /**
@@ -52,6 +58,11 @@ export function eventRoutes(db: Db, bus: EventBus): Hono<AppEnv> {
       const send = async (e: HelmEvent) => {
         if (e.id <= cursor) return;
         cursor = e.id;
+        if (revokes(p, e)) {
+          closed = true;
+          unsubscribe();
+          return;
+        }
         if (!visibleTo(p, e)) return;
         await stream.writeSSE({ id: String(e.id), event: 'change', data: JSON.stringify(e) });
       };
@@ -77,7 +88,8 @@ export function eventRoutes(db: Db, bus: EventBus): Hono<AppEnv> {
       }
 
       while (!closed) {
-        while (queue.length > 0) await send(queue.shift()!);
+        while (queue.length > 0 && !closed) await send(queue.shift()!);
+        if (closed) break;
         const woke = await Promise.race([
           new Promise<boolean>((resolve) => (wake = () => resolve(true))),
           stream.sleep(PING_MS).then(() => false),

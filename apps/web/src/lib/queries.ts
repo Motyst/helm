@@ -6,7 +6,7 @@ import {
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { DoneLogPage, MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
+import type { ApiToken, DoneLogPage, MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
 import { api, type DoneQuery, type TaskAction } from './api.ts';
 
 export const keys = {
@@ -14,6 +14,7 @@ export const keys = {
   tasks: ['tasks'] as const,
   projects: ['projects'] as const,
   done: ['done'] as const,
+  tokens: ['tokens'] as const,
 };
 
 /** Queries kept on the device so the app opens with the last snapshot, even offline. */
@@ -21,7 +22,7 @@ export const PERSISTED_KEYS: readonly string[] = [keys.me[0], keys.tasks[0], key
 
 /** Signed out or session expired: drop everything cached about the board (and its persisted copy). */
 export function clearUserData(qc: QueryClient) {
-  for (const key of [keys.tasks, keys.projects, keys.done]) qc.removeQueries({ queryKey: key });
+  for (const key of [keys.tasks, keys.projects, keys.done, keys.tokens]) qc.removeQueries({ queryKey: key });
 }
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
@@ -82,6 +83,39 @@ export function upsertTask(qc: QueryClient, task: Task) {
 
 export function upsertProject(qc: QueryClient, project: Project) {
   upsert(qc, keys.projects, project);
+}
+
+/** "Last used" changes without a live event, so refresh while the list is on screen. */
+export const useTokens = () =>
+  useQuery({ queryKey: keys.tokens, queryFn: api.tokens, staleTime: 0, refetchInterval: 60_000 });
+
+/** Tokens have no updatedAt; a revoke only ever moves forward, so replace in place. */
+export function upsertToken(qc: QueryClient, token: ApiToken) {
+  qc.setQueryData<ApiToken[]>(keys.tokens, (list) => {
+    if (!list) return list;
+    const i = list.findIndex((t) => t.id === token.id);
+    if (i === -1) return [token, ...list];
+    if (list[i]!.revokedAt && !token.revokedAt) return list;
+    const next = list.slice();
+    next[i] = token;
+    return next;
+  });
+}
+
+export function useCreateToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createToken,
+    onSuccess: ({ token }) => upsertToken(qc, token),
+  });
+}
+
+export function useRevokeToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.revokeToken,
+    onSuccess: (token) => upsertToken(qc, token),
+  });
 }
 
 export function useCreateProject() {

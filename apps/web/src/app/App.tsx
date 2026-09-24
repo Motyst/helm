@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { BoardView } from '../features/board/BoardView.tsx';
 import { DoneView } from '../features/done/DoneView.tsx';
 import { FocusView } from '../features/focus/FocusView.tsx';
+import { SettingsView } from '../features/settings/SettingsView.tsx';
 import { EditorProvider, useEditor } from '../features/task-editor/EditorContext.tsx';
 import { api, ApiError } from '../lib/api.ts';
 import { clearUserData, keys } from '../lib/queries.ts';
@@ -123,6 +124,24 @@ function Shell({ sync }: { sync: SyncState }) {
           <span className={`sync sync-${sync}`} role="status">
             {SYNC_LABEL[sync]}
           </span>
+          <a
+            href={hrefFor('settings')}
+            className="topbar-icon"
+            aria-label="Settings"
+            title="Settings"
+            aria-current={route === 'settings' ? 'page' : undefined}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path
+                d="M19.08 9.85 L21.38 9.94 L21.38 14.06 L19.08 14.15 L18.53 15.49 L20.09 17.18 L17.18 20.09 L15.49 18.53 L14.15 19.08 L14.06 21.38 L9.94 21.38 L9.85 19.08 L8.51 18.53 L6.82 20.09 L3.91 17.18 L5.47 15.49 L4.92 14.15 L2.62 14.06 L2.62 9.94 L4.92 9.85 L5.47 8.51 L3.91 6.82 L6.82 3.91 L8.51 5.47 L9.85 4.92 L9.94 2.62 L14.06 2.62 L14.15 4.92 L15.49 5.47 L17.18 3.91 L20.09 6.82 L18.53 8.51 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </a>
           <button className="btn topbar-add" onClick={() => editor.openCreate()} aria-keyshortcuts="n">
             <span className="topbar-add-plus" aria-hidden>
               +
@@ -131,7 +150,15 @@ function Shell({ sync }: { sync: SyncState }) {
           </button>
         </div>
       </header>
-      {route === 'board' ? <BoardView /> : route === 'done' ? <DoneView /> : <FocusView />}
+      {route === 'board' ? (
+        <BoardView />
+      ) : route === 'done' ? (
+        <DoneView />
+      ) : route === 'settings' ? (
+        <SettingsView />
+      ) : (
+        <FocusView />
+      )}
     </div>
   );
 }

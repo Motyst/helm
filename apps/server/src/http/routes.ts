@@ -32,5 +32,10 @@ export function apiRoutes(s: Services): Hono<AppEnv> {
   );
   r.delete('/projects/:id', (c) => c.json(s.projects.archive(c.var.principal, c.req.param('id'))));
 
+  // ----- API tokens (owner only) -----
+  r.get('/tokens', (c) => c.json(s.tokens.list(c.var.principal)));
+  r.post('/tokens', async (c) => c.json(s.tokens.create(c.var.principal, await jsonBody(c)), 201));
+  r.delete('/tokens/:id', (c) => c.json(s.tokens.revoke(c.var.principal, c.req.param('id'))));
+
   return r;
 }

@@ -37,7 +37,7 @@ export default defineConfig({
         // Extra font subsets still load on demand when a page needs them.
         globIgnores: ['**/*-vietnamese-*'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/mcp/],
         cleanupOutdatedCaches: true,
         // Needed for autoUpdate: the new worker takes over at once and the page reloads onto it.
         skipWaiting: true,
@@ -50,6 +50,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': { target: 'http://localhost:8787', changeOrigin: false },
+      '/mcp': { target: 'http://localhost:8787', changeOrigin: false },
     },
   },
 });

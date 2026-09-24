@@ -7,6 +7,7 @@ import {
   INBOX,
   MoveTaskInput,
   UpdateTaskInput,
+  byPosition,
   computeFocus,
   type DoneLogPage,
   type Focus,
@@ -59,6 +60,15 @@ export class TaskService {
       .orderBy(asc(tasks.position), asc(tasks.id))
       .all()
       .map((r) => toTask(r.tasks));
+  }
+
+  /** Subtasks of a task, done ones included, in board order. */
+  subtasks(p: Principal, id: string): Task[] {
+    const parent = this.getRow(this.ctx.db, id);
+    assertRead(p, parent.projectId);
+    return this.children(this.ctx.db, id)
+      .map(toTask)
+      .sort(byPosition);
   }
 
   focus(p: Principal): Focus {

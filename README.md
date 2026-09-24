@@ -32,6 +32,28 @@ bar in Chrome or Edge). The installed app:
 Installing needs a secure origin: `localhost` works; for a phone, serve it over HTTPS
 (for example `tailscale serve`) and set `HELM_COOKIE_SECURE=true`.
 
+## Connect AI assistants
+
+In Helm, open Settings (the cog) and create a token for each assistant or script. Choose read
+only or read and change, all projects or only some, and an optional expiry. The token is shown
+once; Helm keeps only its SHA-256. Revoking takes effect immediately, including open streams.
+
+**MCP** (Streamable HTTP) at `/mcp`, bearer token only:
+
+```bash
+claude mcp add --transport http helm http://localhost:8787/mcp --header "Authorization: Bearer helm_..."
+```
+
+Tools: `get_focus`, `list_tasks`, `get_task`, `list_projects`, `list_done`, and with read and
+change access `create_task`, `update_task`, `start_task`, `pause_task`, `complete_task`,
+`reopen_task`, `move_task`. Read-only tokens only see the read tools. There is no delete tool.
+
+**REST**: every `/api/v1` endpoint accepts `Authorization: Bearer helm_...`, with the same
+scope rules. Tasks created with a token are marked `ai:<token name>`.
+
+Assistants that only accept OAuth connectors (such as Claude or ChatGPT on the web) can't use a
+plain token yet.
+
 ## Layout
 
 ```

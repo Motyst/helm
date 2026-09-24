@@ -1,6 +1,7 @@
+import type { TokenScope } from '@helm/shared';
 import { forbidden } from '../errors.ts';
 
-export type TokenScope = 'read' | 'read_write';
+export type { TokenScope };
 
 /** Who is making a request. Every service call takes one. */
 export type Principal =

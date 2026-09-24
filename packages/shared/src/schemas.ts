@@ -153,9 +153,48 @@ export const ProjectListQuery = z.object({
 });
 export type ProjectListQuery = z.input<typeof ProjectListQuery>;
 
+// ---------- API tokens ----------
+
+export const TOKEN_SCOPES = ['read', 'read_write'] as const;
+export const TokenScope = z.enum(TOKEN_SCOPES);
+export type TokenScope = z.infer<typeof TokenScope>;
+
+/** A token as the owner sees it. The secret itself is shown once, at creation, and never stored. */
+export const ApiToken = z.object({
+  id: Id,
+  name: z.string(),
+  /** Start of the secret, to tell tokens apart. */
+  prefix: z.string(),
+  scope: TokenScope,
+  /** null = every project and the Inbox. */
+  projectIds: z.array(Id).nullable(),
+  createdAt: z.string(),
+  lastUsedAt: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+});
+export type ApiToken = z.infer<typeof ApiToken>;
+
+export const CreateTokenInput = z
+  .object({
+    /** Who uses it, e.g. "Claude Code". Becomes the task source `ai:<slug>`. */
+    name: z.string().trim().min(1).max(64),
+    scope: TokenScope,
+    projectIds: z.array(Id).min(1).max(100).nullable().default(null),
+    expiresInDays: z.number().int().min(1).max(3650).nullable().default(null),
+  })
+  .strict();
+export type CreateTokenInput = z.input<typeof CreateTokenInput>;
+
+export interface CreatedToken {
+  token: ApiToken;
+  /** Plain secret. Returned only by the create call. */
+  secret: string;
+}
+
 // ---------- Realtime ----------
 
-export const EVENT_ENTITIES = ['task', 'project'] as const;
+export const EVENT_ENTITIES = ['task', 'project', 'token'] as const;
 export type EventEntity = (typeof EVENT_ENTITIES)[number];
 
 export interface HelmEvent {
@@ -167,8 +206,8 @@ export interface HelmEvent {
   entityId: string;
   /** created | updated | moved | started | stopped | completed | reopened | deleted | archived */
   action: string;
-  /** Full snapshot of the entity after the change. */
-  data: Task | Project;
+  /** Full snapshot of the entity after the change. Token events reach the owner only. */
+  data: Task | Project | ApiToken;
 }
 
 // ---------- Defaults ----------

@@ -1,5 +1,5 @@
-import type { ProjectRow, TaskRow } from '@helm/db';
-import type { Project, Task } from '@helm/shared';
+import type { ApiTokenRow, ProjectRow, TaskRow } from '@helm/db';
+import type { ApiToken, Project, Task } from '@helm/shared';
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -33,5 +33,19 @@ export function toProject(r: ProjectRow): Project {
     archivedAt: iso(r.archivedAt),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
+export function toApiToken(r: ApiTokenRow): ApiToken {
+  return {
+    id: r.id,
+    name: r.name,
+    prefix: r.prefix,
+    scope: r.scope,
+    projectIds: r.projectIds ?? null,
+    createdAt: r.createdAt.toISOString(),
+    lastUsedAt: iso(r.lastUsedAt),
+    expiresAt: iso(r.expiresAt),
+    revokedAt: iso(r.revokedAt),
   };
 }

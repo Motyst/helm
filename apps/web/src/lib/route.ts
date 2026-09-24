@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 
-export type Route = 'focus' | 'board' | 'done';
+export type Route = 'focus' | 'board' | 'done' | 'settings';
 
-const ROUTES: Record<string, Route> = { '': 'focus', '#/': 'focus', '#/board': 'board', '#/done': 'done' };
+const ROUTES: Record<string, Route> = {
+  '': 'focus',
+  '#/': 'focus',
+  '#/board': 'board',
+  '#/done': 'done',
+  '#/settings': 'settings',
+};
 
 export const hrefFor = (r: Route) => (r === 'focus' ? '#/' : `#/${r}`);
 

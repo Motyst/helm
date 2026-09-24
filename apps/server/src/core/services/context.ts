@@ -1,5 +1,5 @@
 import { events, type Db, type EventRow, type Tx } from '@helm/db';
-import type { EventEntity, HelmEvent, Project, Task } from '@helm/shared';
+import type { ApiToken, EventEntity, HelmEvent, Project, Task } from '@helm/shared';
 import type { TaskRules } from '../../config.ts';
 import { actorOf, type Principal } from '../auth/principal.ts';
 import type { EventBus } from '../events/bus.ts';
@@ -16,7 +16,7 @@ export interface EmitInput {
   entityId: string;
   projectId: string | null;
   action: string;
-  data: Task | Project;
+  data: Task | Project | ApiToken;
 }
 
 export type Emit = (e: EmitInput) => void;
@@ -29,7 +29,7 @@ export function toHelmEvent(r: EventRow): HelmEvent {
     entity: r.entity,
     entityId: r.entityId,
     action: r.action,
-    data: r.data as Task | Project,
+    data: r.data as HelmEvent['data'],
   };
 }
 

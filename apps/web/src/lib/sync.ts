@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import type { HelmEvent, Project, Task } from '@helm/shared';
-import { keys, upsertProject, upsertTask } from './queries.ts';
+import type { ApiToken, HelmEvent, Project, Task } from '@helm/shared';
+import { keys, upsertProject, upsertTask, upsertToken } from './queries.ts';
 
 export type SyncState = 'connecting' | 'live' | 'offline';
 
@@ -41,9 +41,10 @@ export function useLiveSync(enabled: boolean): SyncState {
         const returning = e.action === 'reopened' && !qc.getQueryData<Task[]>(keys.tasks)?.some((t) => t.id === task.id);
         upsertTask(qc, task);
         if (returning) void qc.invalidateQueries({ queryKey: keys.tasks });
-      } else upsertProject(qc, e.data as Project);
+      } else if (e.entity === 'project') upsertProject(qc, e.data as Project);
+      else upsertToken(qc, e.data as ApiToken);
       // A snapshot request in flight may predate this event; fetch again once it lands.
-      const key = e.entity === 'task' ? keys.tasks : keys.projects;
+      const key = keys[e.entity === 'task' ? 'tasks' : e.entity === 'project' ? 'projects' : 'tokens'];
       if (qc.isFetching({ queryKey: key }) > 0) void qc.invalidateQueries({ queryKey: key });
     };
 
