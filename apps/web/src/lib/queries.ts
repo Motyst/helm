@@ -10,10 +10,19 @@ import type { DoneLogPage, MoveTaskInput, Project, Task, UpdateProjectInput } fr
 import { api, type DoneQuery, type TaskAction } from './api.ts';
 
 export const keys = {
+  me: ['me'] as const,
   tasks: ['tasks'] as const,
   projects: ['projects'] as const,
   done: ['done'] as const,
 };
+
+/** Queries kept on the device so the app opens with the last snapshot, even offline. */
+export const PERSISTED_KEYS: readonly string[] = [keys.me[0], keys.tasks[0], keys.projects[0]];
+
+/** Signed out or session expired: drop everything cached about the board (and its persisted copy). */
+export function clearUserData(qc: QueryClient) {
+  for (const key of [keys.tasks, keys.projects, keys.done]) qc.removeQueries({ queryKey: key });
+}
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
 const liveProjects = (ps: Project[]) => ps.filter((p) => !p.archivedAt);

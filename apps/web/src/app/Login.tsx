@@ -17,7 +17,7 @@ export function Login({ onSignedIn }: { onSignedIn: () => void }) {
       setError(
         err instanceof ApiError && err.status === 401
           ? 'Wrong password. Check HELM_OWNER_PASSWORD in your .env.'
-          : err instanceof ApiError
+          : err instanceof ApiError && err.status !== 0
             ? err.message
             : 'Can’t reach the Helm server. Is it running?',
       );

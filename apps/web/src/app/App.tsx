@@ -4,10 +4,11 @@ import { BoardView } from '../features/board/BoardView.tsx';
 import { DoneView } from '../features/done/DoneView.tsx';
 import { FocusView } from '../features/focus/FocusView.tsx';
 import { EditorProvider, useEditor } from '../features/task-editor/EditorContext.tsx';
-import { api } from '../lib/api.ts';
+import { api, ApiError } from '../lib/api.ts';
+import { clearUserData, keys } from '../lib/queries.ts';
 import { hrefFor, useRoute, type Route } from '../lib/route.ts';
 import { useLiveSync, type SyncState } from '../lib/sync.ts';
-import { ToastProvider } from '../ui/Toast.tsx';
+import { ToastProvider, useToast } from '../ui/Toast.tsx';
 import { Login } from './Login.tsx';
 import './app.css';
 
@@ -30,12 +31,24 @@ function isTyping(el: EventTarget | null): boolean {
 
 export function App() {
   const qc = useQueryClient();
-  const me = useQuery({ queryKey: ['me'], queryFn: api.me });
+  // Re-checked on every launch; a cached answer lets the installed app open offline.
+  const me = useQuery({ queryKey: keys.me, queryFn: api.me, staleTime: 0 });
   const signedIn = me.data?.signedIn === true;
   const sync = useLiveSync(signedIn);
 
-  if (me.isPending) return null;
-  if (!signedIn) return <Login onSignedIn={() => qc.invalidateQueries({ queryKey: ['me'] })} />;
+  useEffect(() => {
+    if (me.data?.signedIn === false) clearUserData(qc);
+  }, [me.data, qc]);
+
+  if (me.isPending) {
+    // First launch with no connection: nothing cached to show yet.
+    return me.fetchStatus === 'paused' ? (
+      <main className="login">
+        <p className="login-offline">Helm needs a connection the first time it opens. It will load once you’re back online.</p>
+      </main>
+    ) : null;
+  }
+  if (!signedIn) return <Login onSignedIn={() => qc.invalidateQueries({ queryKey: keys.me })} />;
 
   return (
     <ToastProvider>
@@ -46,9 +59,32 @@ export function App() {
   );
 }
 
+/** Background changes (done, start, drag, collapse) have no form to show errors in; toast them. */
+function useMutationErrorToasts() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  useEffect(
+    () =>
+      qc.getMutationCache().subscribe((e) => {
+        if (e.type !== 'updated' || e.action.type !== 'error') return;
+        // Dialogs show their own errors inline.
+        if (document.querySelector('dialog[open]')) return;
+        const err = e.action.error;
+        toast({
+          message:
+            err instanceof ApiError && err.status === 0
+              ? 'Not saved: can’t reach Helm. Check your connection.'
+              : `Not saved: ${err instanceof Error ? err.message : 'something went wrong'}`,
+        });
+      }),
+    [qc, toast],
+  );
+}
+
 function Shell({ sync }: { sync: SyncState }) {
   const editor = useEditor();
   const route = useRoute();
+  useMutationErrorToasts();
 
   // Single-key shortcuts: N new task, F focus, B board, D done (not while typing or in a dialog).
   useEffect(() => {

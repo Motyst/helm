@@ -87,6 +87,12 @@
   place-items: center;
   padding: var(--gutter);
 }
+.login-offline {
+  max-width: 26rem;
+  font-size: var(--step-1);
+  color: var(--ink-soft);
+  text-align: center;
+}
 .login-form {
   width: min(22rem, 100%);
   display: flex;

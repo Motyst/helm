@@ -10,8 +10,9 @@
   --magenta: #b3307a;
   --magenta-soft: #b3307a26;
 
-  --font-sans: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
-  --font-chart: 'Newsreader', Georgia, serif;
+  /* Self-hosted (see main.tsx) so the installed app renders the same offline. */
+  --font-sans: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  --font-chart: 'Newsreader Variable', 'Newsreader', Georgia, serif;
 
   /* Type scale (perfect fourth, 1.333) */
   --step--1: 0.8125rem;

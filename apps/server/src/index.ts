@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -16,11 +16,29 @@ const services = createServices(ctx);
 const app = await createApp({ config, ctx, services, modules: [] });
 
 // Production: serve the built PWA and fall back to index.html for client-side routes.
-if (config.webDist) {
-  const root = resolve(config.webDist);
-  const indexHtml = readFileSync(join(root, 'index.html'), 'utf8');
-  app.use('/*', serveStatic({ root }));
-  app.get('*', (c) => c.html(indexHtml));
+const webRoot = config.webDist ? resolve(config.webDist) : null;
+if (webRoot && !existsSync(join(webRoot, 'index.html'))) {
+  console.warn(`HELM_WEB_DIST is set but ${webRoot} has no build yet. Run \`pnpm build\`; serving the API only.`);
+} else if (webRoot) {
+  const indexHtml = readFileSync(join(webRoot, 'index.html'), 'utf8');
+  app.use(
+    '/*',
+    serveStatic({
+      root: webRoot,
+      onFound: (path, c) => {
+        // Hashed build output never changes; everything else (index, service worker, manifest)
+        // must be revalidated so a new deploy is picked up.
+        c.header(
+          'Cache-Control',
+          /[\\/]assets[\\/]/.test(path) ? 'public, max-age=31536000, immutable' : 'no-cache',
+        );
+      },
+    }),
+  );
+  app.get('*', (c) => {
+    c.header('Cache-Control', 'no-cache');
+    return c.html(indexHtml);
+  });
 }
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
