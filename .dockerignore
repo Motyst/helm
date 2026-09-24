@@ -1,0 +1,12 @@
+# Keep the build context small and never bake secrets or data into an image.
+**/node_modules
+**/dist
+**/data
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+.git
+.claude
+coverage

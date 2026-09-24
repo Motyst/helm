@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter @helm/server --filter @helm/web dev",
-    "build": "pnpm --filter @helm/web build",
+    "build": "pnpm --filter @helm/web build && pnpm --filter @helm/server build",
     "start": "pnpm --filter @helm/server start",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",

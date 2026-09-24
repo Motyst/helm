@@ -29,6 +29,7 @@ export function setup(rules: Partial<TaskRules> = {}) {
 
 export const testConfig: Config = {
   port: 0,
+  host: '127.0.0.1',
   dbPath: ':memory:',
   ownerPassword: 'correct horse battery staple',
   sessionSecret: 'test-secret-test-secret-test-secret',

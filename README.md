@@ -30,7 +30,60 @@ bar in Chrome or Edge). The installed app:
   cleared when the session ends
 
 Installing needs a secure origin: `localhost` works; for a phone, serve it over HTTPS
-(for example `tailscale serve`) and set `HELM_COOKIE_SECURE=true`.
+(see [Phone and other devices](#phone-and-other-devices)).
+
+## Run with Docker
+
+One container runs everything: API, live sync, MCP and the app. Data lives in the `helm-data`
+volume, so rebuilding or updating the image keeps it.
+
+```bash
+cp .env.example .env        # if you haven't: password, session secret, OpenAI key
+docker compose up -d --build
+```
+
+Open http://localhost:8787. Compose publishes the port on `127.0.0.1` only, so nothing else on
+your network can connect directly.
+
+- Update: `git pull`, then `docker compose up -d --build`.
+- Logs: `docker compose logs -f helm`.
+- Back up the database while it runs (a consistent copy, safe with live writes):
+
+  ```bash
+  docker compose exec helm node -e "require('better-sqlite3')('/data/helm.db').backup('/data/backup.db').then(() => console.log('saved'))"
+  docker compose cp helm:/data/backup.db ./helm-backup.db
+  ```
+
+- Bring over the database from `pnpm start`: stop that server first, then
+
+  ```bash
+  docker compose stop helm
+  docker compose run --rm -v ./apps/server/data:/import helm node -e "require('better-sqlite3')('/import/helm.db').backup('/data/helm.db').then(() => console.log('imported'))"
+  docker compose start helm
+  ```
+
+  This replaces what's in the volume.
+
+## Phone and other devices
+
+Use [Tailscale](https://tailscale.com): it gives Helm an HTTPS address that only your own
+devices can open. HTTPS is what the phone needs to install the app and use the microphone.
+
+1. Install Tailscale on the computer running Helm and on your phone, signed in to the same
+   account.
+2. In the Tailscale admin console, under DNS, turn on MagicDNS and HTTPS certificates.
+3. On the computer: `tailscale serve --bg 8787`. It prints the address, like
+   `https://your-pc.your-tailnet.ts.net`.
+4. Set `HELM_COOKIE_SECURE=true` in `.env` and restart Helm (`docker compose up -d`, or restart
+   `pnpm start`).
+5. On the phone, open that address, sign in, and add it to the home screen (Share → Add to
+   Home Screen on iPhone; the install prompt or ⋮ → Install app on Android).
+
+AI assistants on other devices use the same address, for example
+`https://your-pc.your-tailnet.ts.net/mcp`; Settings shows the right commands when opened there.
+
+Use `tailscale serve`, not `tailscale funnel`: funnel puts Helm on the public internet. To stop
+serving: `tailscale serve reset`.
 
 ## Voice input
 
@@ -103,6 +156,7 @@ same services with a `Principal`, so scope checks and events happen in one place
 
 ## Scripts
 
+- `pnpm build`: the app (`apps/web/dist`) and the server bundle (`apps/server/dist/server.mjs`)
 - `pnpm test`: all tests
 - `pnpm typecheck`: all packages
 - `pnpm db:generate`: new migration after editing `packages/db/src/schema.ts`

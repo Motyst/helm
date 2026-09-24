@@ -3,7 +3,10 @@ import { z } from 'zod';
 
 const Env = z.object({
   HELM_PORT: z.coerce.number().int().default(8787),
+  // Loopback by default: reach it from elsewhere through a proxy (tailscale serve), not the LAN.
+  HELM_HOST: z.string().trim().default('127.0.0.1'),
   HELM_DB_PATH: z.string().default('./data/helm.db'),
+  HELM_MIGRATIONS_DIR: z.string().optional(),
   HELM_OWNER_PASSWORD: z.string().min(1, 'HELM_OWNER_PASSWORD is required'),
   HELM_SESSION_SECRET: z.string().min(16, 'HELM_SESSION_SECRET must be at least 16 chars'),
   HELM_COOKIE_SECURE: z.stringbool().default(false),
@@ -29,7 +32,10 @@ export interface TaskRules {
 
 export interface Config {
   port: number;
+  host: string;
   dbPath: string;
+  /** Where migration SQL lives, when not next to the code (running the bundle outside Docker). */
+  migrationsDir?: string;
   ownerPassword: string;
   sessionSecret: string;
   cookieSecure: boolean;
@@ -49,7 +55,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const e = parsed.data;
   return {
     port: e.HELM_PORT,
+    host: e.HELM_HOST,
     dbPath: e.HELM_DB_PATH,
+    migrationsDir: e.HELM_MIGRATIONS_DIR || undefined,
     ownerPassword: e.HELM_OWNER_PASSWORD,
     sessionSecret: e.HELM_SESSION_SECRET,
     cookieSecure: e.HELM_COOKIE_SECURE,

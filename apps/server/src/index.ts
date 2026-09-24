@@ -13,7 +13,7 @@ import { mcpModule } from './modules/mcp/index.ts';
 import { voiceModule } from './modules/voice/index.ts';
 
 const config = loadConfig();
-const { db, close } = openDb({ path: config.dbPath });
+const { db, close } = openDb({ path: config.dbPath, migrationsFolder: config.migrationsDir });
 const ctx: ServiceContext = { db, bus: new EventBus(), rules: config.rules, now: () => new Date() };
 const services = createServices(ctx);
 
@@ -48,8 +48,9 @@ if (webRoot && !existsSync(join(webRoot, 'index.html'))) {
   });
 }
 
-const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
-  console.log(`Helm server listening on http://localhost:${info.port}`);
+const server = serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
+  const where = config.host === '0.0.0.0' || config.host === '::' ? 'all interfaces' : config.host;
+  console.log(`Helm server listening on port ${info.port} (${where})`);
 });
 
 function shutdown() {

@@ -1,0 +1,21 @@
+# docker compose up -d --build
+# Settings come from .env (see .env.example); the values below are fixed for the container.
+services:
+  helm:
+    build: .
+    image: helm:latest
+    env_file: .env
+    environment:
+      HELM_HOST: 0.0.0.0
+      HELM_PORT: 8787
+      HELM_DB_PATH: /data/helm.db
+      HELM_WEB_DIST: /app/web
+    # Only this machine can connect. Reach it from other devices with `tailscale serve`.
+    ports:
+      - "127.0.0.1:${HELM_PORT:-8787}:8787"
+    volumes:
+      - helm-data:/data
+    restart: unless-stopped
+
+volumes:
+  helm-data:
