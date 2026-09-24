@@ -202,12 +202,41 @@ describe('reads', () => {
     services.tasks.complete(o, b.id);
     services.tasks.complete(o, c.id);
 
-    const titles = (q: object) => services.tasks.doneLog(o, q).map((t) => t.title);
+    const titles = (q: object) => services.tasks.doneLog(o, q).tasks.map((t) => t.title);
     expect(titles({})).toEqual(['C', 'B', 'A']);
     expect(titles({ projectId: work.id })).toEqual(['C', 'A']);
     expect(titles({ projectId: 'inbox' })).toEqual(['B']);
     expect(titles({ from: '2026-09-21T00:00:00.000Z' })).toEqual(['C', 'B']);
     expect(titles({ to: '2026-09-21T00:00:00.000Z' })).toEqual(['A']);
+  });
+
+  it('done log pages with a cursor without losing tasks completed at the same moment', () => {
+    const { services, clock } = setup();
+    const parent = services.tasks.create(o, {
+      title: 'P',
+      subtasks: [{ title: 's1' }, { title: 's2' }, { title: 's3' }],
+    });
+    const solo = services.tasks.create(o, { title: 'Solo' });
+    clock.set('2026-09-20T12:00:00.000Z');
+    services.tasks.complete(o, solo.id);
+    clock.set('2026-09-22T12:00:00.000Z');
+    services.tasks.complete(o, parent.id); // parent + 3 subtasks share one timestamp
+
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    let pages = 0;
+    do {
+      const page = services.tasks.doneLog(o, { includeSubtasks: 'true', limit: '2', cursor });
+      seen.push(...page.tasks.map((t) => t.title));
+      cursor = page.nextCursor ?? undefined;
+      pages++;
+    } while (cursor && pages < 10);
+
+    expect(seen).toHaveLength(5);
+    expect(new Set(seen)).toEqual(new Set(['P', 's1', 's2', 's3', 'Solo']));
+    expect(seen.at(-1)).toBe('Solo');
+    expect(pages).toBe(3);
+    expect(errCode(() => services.tasks.doneLog(o, { cursor: 'nope' }))).toBe('invalid');
   });
 
   it('archived projects drop off the board', () => {
@@ -217,6 +246,7 @@ describe('reads', () => {
     services.projects.archive(o, work.id);
     expect(services.tasks.board(o)).toEqual([]);
     expect(services.projects.list(o)).toEqual([]);
+    expect(services.projects.list(o, { includeArchived: 'true' }).map((p) => p.name)).toEqual(['Work']);
   });
 });
 

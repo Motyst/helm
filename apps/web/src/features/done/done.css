@@ -1,0 +1,242 @@
+/* Done log, laid out like a ship's log: time in the margin, each finished task a position fix
+   (circle with a dot, as plotted on a chart) along the day's track. */
+
+.log {
+  flex: 1;
+  width: 100%;
+  max-width: 50rem;
+  margin: 0 auto;
+  padding-top: 1rem;
+}
+
+.log-head {
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+}
+.log-summary {
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+.log-ranges {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.log-select {
+  font: inherit;
+  min-height: 40px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--contour-faint);
+  background: var(--shallows);
+  color: var(--ink);
+}
+.log-dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex-basis: 100%;
+  color: var(--ink-soft);
+}
+
+.log-empty {
+  padding: 2rem 0;
+  color: var(--ink-soft);
+  font-size: var(--step-1);
+}
+
+/* ----- Day ----- */
+
+.log-day + .log-day {
+  margin-top: 2rem;
+}
+.log-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1.5px solid var(--contour-faint);
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+.log-date-stats {
+  font-size: var(--step-0);
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.log-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 0 0;
+}
+
+/* ----- Entry ----- */
+
+.log-entry {
+  --fix-y: 0.95rem; /* centre of the first text line */
+  display: grid;
+  grid-template-columns: 4.75rem 1.5rem minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 0.5rem;
+}
+.log-time {
+  padding-top: 0.2rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.log-fix {
+  position: relative;
+  align-self: stretch;
+}
+/* The track between fixes. */
+.log-fix::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - 0.75px);
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--contour);
+}
+.log-entry:first-child .log-fix::before {
+  top: var(--fix-y);
+}
+.log-entry:last-child .log-fix::before {
+  bottom: auto;
+  height: var(--fix-y);
+}
+.log-entry:only-child .log-fix::before {
+  display: none;
+}
+/* The fix itself. */
+.log-fix::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: var(--fix-y);
+  width: 0.8rem;
+  height: 0.8rem;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 1.5px solid var(--contour);
+  background: radial-gradient(circle, var(--ink-soft) 0 1.5px, var(--water) 2px);
+}
+
+.log-body {
+  padding: 0 0 1.25rem;
+  min-width: 0;
+}
+.log-title {
+  font-size: var(--step-1);
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.log-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 1rem;
+  margin-top: 0.15rem;
+  color: var(--ink-soft);
+}
+
+.log-subs {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  color: var(--ink-soft);
+}
+.log-subs li {
+  display: flex;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+/* Tick drawn as a short check, same weight as the track. */
+.log-subs li::before {
+  content: '';
+  flex: none;
+  width: 0.35rem;
+  height: 0.65rem;
+  margin: 0.3rem 0.2rem 0 0.1rem;
+  border: solid var(--contour);
+  border-width: 0 1.5px 1.5px 0;
+  rotate: 45deg;
+}
+
+.log-reopen {
+  min-height: 40px;
+  padding-inline: 0.9rem;
+}
+.log-reopen-icon {
+  display: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+@media (hover: hover) {
+  .log-reopen {
+    opacity: 0;
+  }
+  .log-entry:hover .log-reopen,
+  .log-reopen:focus-visible {
+    opacity: 1;
+  }
+}
+
+.log-more {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 2rem;
+}
+
+@media (max-width: 560px) {
+  .log-summary {
+    font-size: var(--step-1);
+  }
+  .log-entry {
+    --fix-y: 0.75rem;
+    grid-template-columns: 3.9rem 1.25rem minmax(0, 1fr) auto;
+    column-gap: 0.4rem;
+  }
+  .log-title {
+    font-size: var(--step-0);
+    font-weight: 700;
+  }
+  .log-time {
+    padding-top: 0;
+    font-size: var(--step--1);
+    line-height: 1.5rem;
+  }
+  /* Reopen shrinks to an icon beside the title. */
+  .log-reopen {
+    min-width: 44px;
+    min-height: 44px;
+    margin-top: -0.6rem;
+    padding: 0;
+    justify-content: center;
+  }
+  .log-reopen-icon {
+    display: block;
+  }
+  .log-reopen-text {
+    display: none;
+  }
+}

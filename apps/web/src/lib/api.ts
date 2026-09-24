@@ -1,6 +1,7 @@
 import type {
   CreateProjectInput,
   CreateTaskInput,
+  DoneLogPage,
   MoveTaskInput,
   Project,
   Task,
@@ -33,6 +34,22 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return data as T;
 }
 
+export interface DoneQuery {
+  projectId?: string;
+  from?: string;
+  to?: string;
+  includeSubtasks?: boolean;
+  limit?: number;
+  cursor?: string;
+}
+
+function queryString(q: object): string {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(q)) if (v !== undefined) params.set(k, String(v));
+  const s = params.toString();
+  return s ? `?${s}` : '';
+}
+
 export type TaskAction = 'start' | 'stop' | 'complete' | 'reopen';
 
 export const api = {
@@ -46,8 +63,10 @@ export const api = {
   deleteTask: (id: string) => request<Task>('DELETE', `/tasks/${id}`),
   taskAction: (id: string, action: TaskAction) => request<Task>('POST', `/tasks/${id}/${action}`),
   moveTask: (id: string, input: MoveTaskInput) => request<Task>('POST', `/tasks/${id}/move`, input),
+  done: (q: DoneQuery) => request<DoneLogPage>('GET', `/done${queryString(q)}`),
 
-  projects: () => request<Project[]>('GET', '/projects'),
+  /** Archived ones too, so the Done log can still name them. */
+  projects: () => request<Project[]>('GET', '/projects?includeArchived=true'),
   createProject: (input: CreateProjectInput) => request<Project>('POST', '/projects', input),
   updateProject: (id: string, patch: UpdateProjectInput) => request<Project>('PATCH', `/projects/${id}`, patch),
   archiveProject: (id: string) => request<Project>('DELETE', `/projects/${id}`),

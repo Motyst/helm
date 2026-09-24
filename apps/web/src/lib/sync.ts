@@ -19,6 +19,7 @@ export function useLiveSync(enabled: boolean): SyncState {
     const refetchAll = () => {
       void qc.invalidateQueries({ queryKey: keys.tasks });
       void qc.invalidateQueries({ queryKey: keys.projects });
+      void qc.invalidateQueries({ queryKey: keys.done });
     };
 
     es.addEventListener('open', () => setState('live'));
@@ -28,8 +29,13 @@ export function useLiveSync(enabled: boolean): SyncState {
     es.addEventListener('reset', refetchAll);
     es.addEventListener('change', (msg) => {
       const e = JSON.parse((msg as MessageEvent<string>).data) as HelmEvent;
-      if (e.entity === 'task') upsertTask(qc, e.data as Task);
-      else upsertProject(qc, e.data as Project);
+      if (e.entity === 'task') {
+        const task = e.data as Task;
+        // A task reopened from the log returns to the board without its done subtasks; take a snapshot.
+        const returning = e.action === 'reopened' && !qc.getQueryData<Task[]>(keys.tasks)?.some((t) => t.id === task.id);
+        upsertTask(qc, task);
+        if (returning) void qc.invalidateQueries({ queryKey: keys.tasks });
+      } else upsertProject(qc, e.data as Project);
       // A snapshot request in flight may predate this event; fetch again once it lands.
       const key = e.entity === 'task' ? keys.tasks : keys.projects;
       if (qc.isFetching({ queryKey: key }) > 0) void qc.invalidateQueries({ queryKey: key });

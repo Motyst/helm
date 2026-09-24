@@ -21,7 +21,7 @@ export function apiRoutes(s: Services): Hono<AppEnv> {
   r.get('/done', (c) => c.json(s.tasks.doneLog(c.var.principal, c.req.query())));
 
   // ----- Projects -----
-  r.get('/projects', (c) => c.json(s.projects.list(c.var.principal)));
+  r.get('/projects', (c) => c.json(s.projects.list(c.var.principal, c.req.query())));
   r.get('/projects/:id', (c) => c.json(s.projects.get(c.var.principal, c.req.param('id'))));
   r.post('/projects', async (c) => c.json(s.projects.create(c.var.principal, await jsonBody(c)), 201));
   r.patch('/projects/:id', async (c) =>

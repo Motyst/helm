@@ -117,6 +117,10 @@
 }
 
 /* Phones: tighter top bar. Last in the file so it wins over the base rules above. */
+.topbar-add-plus {
+  display: none;
+}
+
 @media (max-width: 520px) {
   .topbar,
   .topbar-end {
@@ -129,8 +133,24 @@
   .nav a {
     padding: 0 0.6rem;
   }
-  .topbar-end .btn {
-    padding-inline: 0.9rem;
+  /* Round + button; the hidden label stays as its accessible name. */
+  .topbar-add {
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+  .topbar-add-plus {
+    display: block;
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+  .topbar-add-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   /* Keep the status dot, drop the word. */
   .sync {

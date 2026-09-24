@@ -1,16 +1,55 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
-import { api, type TaskAction } from './api.ts';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+  type QueryClient,
+} from '@tanstack/react-query';
+import type { DoneLogPage, MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
+import { api, type DoneQuery, type TaskAction } from './api.ts';
 
 export const keys = {
   tasks: ['tasks'] as const,
   projects: ['projects'] as const,
+  done: ['done'] as const,
 };
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
 const liveProjects = (ps: Project[]) => ps.filter((p) => !p.archivedAt);
 /** Active projects. Archived ones stay in the cache (live events upsert them) but are filtered out here. */
 export const useProjects = () => useQuery({ queryKey: keys.projects, queryFn: api.projects, select: liveProjects });
+/** Including archived projects (for labelling old tasks). */
+export const useAllProjects = () => useQuery({ queryKey: keys.projects, queryFn: api.projects });
+
+const DONE_PAGE = 100;
+
+/** Done log, newest first, loaded a page at a time. */
+export function useDoneLog(query: Omit<DoneQuery, 'cursor' | 'limit'>) {
+  return useInfiniteQuery({
+    queryKey: [...keys.done, query],
+    queryFn: ({ pageParam }) => api.done({ ...query, limit: DONE_PAGE, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+function inDoneLog(qc: QueryClient, id: string): boolean {
+  return qc
+    .getQueriesData<InfiniteData<DoneLogPage>>({ queryKey: keys.done })
+    .some(([, data]) => data?.pages.some((pg) => pg.tasks.some((t) => t.id === id)));
+}
+
+const doneRefresh = new WeakMap<QueryClient, ReturnType<typeof setTimeout>>();
+
+/** Completing a parent emits one event per subtask; refetch the log once after the burst. */
+function refreshDoneLog(qc: QueryClient) {
+  clearTimeout(doneRefresh.get(qc));
+  doneRefresh.set(
+    qc,
+    setTimeout(() => void qc.invalidateQueries({ queryKey: keys.done }), 150),
+  );
+}
 
 /** Insert or replace an entity in a cached list (used by mutations and live events). */
 export function upsert<T extends { id: string; updatedAt: string }>(qc: QueryClient, key: readonly unknown[], item: T) {
@@ -28,6 +67,8 @@ export function upsert<T extends { id: string; updatedAt: string }>(qc: QueryCli
 
 export function upsertTask(qc: QueryClient, task: Task) {
   upsert(qc, keys.tasks, task);
+  // Entered or left the log (or changed while in it).
+  if (task.status === 'done' || inDoneLog(qc, task.id)) refreshDoneLog(qc);
 }
 
 export function upsertProject(qc: QueryClient, project: Project) {

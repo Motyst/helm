@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { BoardView } from '../features/board/BoardView.tsx';
+import { DoneView } from '../features/done/DoneView.tsx';
 import { FocusView } from '../features/focus/FocusView.tsx';
 import { EditorProvider, useEditor } from '../features/task-editor/EditorContext.tsx';
 import { api } from '../lib/api.ts';
@@ -19,6 +20,7 @@ const SYNC_LABEL: Record<SyncState, string> = {
 const NAV: { route: Route; label: string; key: string }[] = [
   { route: 'focus', label: 'Focus', key: 'f' },
   { route: 'board', label: 'Board', key: 'b' },
+  { route: 'done', label: 'Done', key: 'd' },
 ];
 
 function isTyping(el: EventTarget | null): boolean {
@@ -48,7 +50,7 @@ function Shell({ sync }: { sync: SyncState }) {
   const editor = useEditor();
   const route = useRoute();
 
-  // Single-key shortcuts: N new task, F focus, B board (not while typing or in a dialog).
+  // Single-key shortcuts: N new task, F focus, B board, D done (not while typing or in a dialog).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
@@ -85,12 +87,15 @@ function Shell({ sync }: { sync: SyncState }) {
           <span className={`sync sync-${sync}`} role="status">
             {SYNC_LABEL[sync]}
           </span>
-          <button className="btn" onClick={() => editor.openCreate()} aria-keyshortcuts="n">
-            Add task
+          <button className="btn topbar-add" onClick={() => editor.openCreate()} aria-keyshortcuts="n">
+            <span className="topbar-add-plus" aria-hidden>
+              +
+            </span>
+            <span className="topbar-add-label">Add task</span>
           </button>
         </div>
       </header>
-      {route === 'board' ? <BoardView /> : <FocusView />}
+      {route === 'board' ? <BoardView /> : route === 'done' ? <DoneView /> : <FocusView />}
     </div>
   );
 }

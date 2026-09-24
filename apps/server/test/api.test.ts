@@ -104,8 +104,12 @@ describe('tasks API', () => {
     focus = (await (await app.request('/api/v1/focus', { headers: { cookie } })).json()) as typeof focus;
     expect(focus.current).toBeNull();
 
-    const done = (await (await app.request('/api/v1/done', { headers: { cookie } })).json()) as unknown[];
-    expect(done).toHaveLength(1);
+    const done = (await (await app.request('/api/v1/done', { headers: { cookie } })).json()) as {
+      tasks: unknown[];
+      nextCursor: string | null;
+    };
+    expect(done.tasks).toHaveLength(1);
+    expect(done.nextCursor).toBeNull();
   });
 
   it('maps errors to status codes', async () => {

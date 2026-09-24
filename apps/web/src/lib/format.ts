@@ -10,5 +10,5 @@ export function minutesSince(iso: string, now: number): number {
 }
 
 export function clockTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }

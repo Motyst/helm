@@ -8,6 +8,7 @@ import {
   MoveTaskInput,
   UpdateTaskInput,
   computeFocus,
+  type DoneLogPage,
   type Focus,
   type Task,
   type TaskStatus,
@@ -65,15 +66,23 @@ export class TaskService {
   }
 
   /** Completed tasks, newest first. */
-  doneLog(p: Principal, query: unknown = {}): Task[] {
+  doneLog(p: Principal, query: unknown = {}): DoneLogPage {
     const q = parse(DoneLogQuery, query);
+    const limit = q.limit ?? 200;
     const project: SQL | undefined =
       q.projectId === undefined
         ? undefined
         : q.projectId === INBOX
           ? isNull(tasks.projectId)
           : eq(tasks.projectId, q.projectId);
-    return this.ctx.db
+    // Keyset paging on (completed_at, id): a whole parent + subtasks can share one timestamp.
+    let after: SQL | undefined;
+    if (q.cursor) {
+      const [ms, id] = q.cursor.split(':') as [string, string];
+      const at = new Date(Number(ms));
+      after = or(lt(tasks.completedAt, at), and(eq(tasks.completedAt, at), lt(tasks.id, id)));
+    }
+    const rows = this.ctx.db
       .select()
       .from(tasks)
       .where(
@@ -84,13 +93,19 @@ export class TaskService {
           q.from ? gte(tasks.completedAt, new Date(q.from)) : undefined,
           q.to ? lt(tasks.completedAt, new Date(q.to)) : undefined,
           project,
+          after,
           this.scopeFilter(p),
         ),
       )
-      .orderBy(desc(tasks.completedAt))
-      .limit(q.limit ?? 200)
-      .all()
-      .map(toTask);
+      .orderBy(desc(tasks.completedAt), desc(tasks.id))
+      .limit(limit + 1)
+      .all();
+    const page = rows.slice(0, limit);
+    const last = page.at(-1);
+    return {
+      tasks: page.map(toTask),
+      nextCursor: rows.length > limit && last ? `${last.completedAt!.getTime()}:${last.id}` : null,
+    };
   }
 
   // ---------- Writes ----------

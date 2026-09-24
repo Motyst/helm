@@ -4,6 +4,7 @@ import {
   CreateProjectInput,
   MoveProjectInput,
   PROJECT_COLORS,
+  ProjectListQuery,
   UpdateProjectInput,
   type Project,
 } from '@helm/shared';
@@ -24,12 +25,13 @@ export function getLiveProject(tx: Tx, id: string): ProjectRow {
 export class ProjectService {
   constructor(private readonly ctx: ServiceContext) {}
 
-  list(p: Principal): Project[] {
+  list(p: Principal, query: unknown = {}): Project[] {
+    const q = parse(ProjectListQuery, query);
     const scope = projectScope(p);
     return this.ctx.db
       .select()
       .from(projects)
-      .where(and(isNull(projects.archivedAt), scope ? inArray(projects.id, scope) : undefined))
+      .where(and(q.includeArchived ? undefined : isNull(projects.archivedAt), scope ? inArray(projects.id, scope) : undefined))
       .orderBy(asc(projects.position), asc(projects.id))
       .all()
       .map(toProject);

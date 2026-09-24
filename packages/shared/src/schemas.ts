@@ -134,8 +134,24 @@ export const DoneLogQuery = z.object({
   to: z.iso.datetime({ offset: true }).optional(),
   includeSubtasks: z.stringbool().optional(),
   limit: z.coerce.number().int().min(1).max(1000).optional(),
+  /** Opaque `nextCursor` from the previous page. */
+  cursor: z
+    .string()
+    .regex(/^\d+:[^:]+$/, 'cursor must come from a previous page')
+    .optional(),
 });
 export type DoneLogQuery = z.input<typeof DoneLogQuery>;
+
+/** Newest first. `nextCursor` is null on the last page. */
+export interface DoneLogPage {
+  tasks: Task[];
+  nextCursor: string | null;
+}
+
+export const ProjectListQuery = z.object({
+  includeArchived: z.stringbool().optional(),
+});
+export type ProjectListQuery = z.input<typeof ProjectListQuery>;
 
 // ---------- Realtime ----------
 
