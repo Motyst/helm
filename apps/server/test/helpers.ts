@@ -31,6 +31,7 @@ export const testConfig: Config = {
   port: 0,
   host: '127.0.0.1',
   dbPath: ':memory:',
+  backups: { dir: '', keep: 0 },
   ownerPassword: 'correct horse battery staple',
   sessionSecret: 'test-secret-test-secret-test-secret',
   cookieSecure: false,

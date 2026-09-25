@@ -10,3 +10,5 @@
 .git
 .claude
 coverage
+**/helm-backups
+import

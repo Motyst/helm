@@ -5,6 +5,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { openDb } from '@helm/db';
 import { createProviders } from '@helm/providers';
 import { createApp } from './app.ts';
+import { scheduleBackups } from './backups.ts';
 import { loadConfig } from './config.ts';
 import { EventBus } from './core/events/bus.ts';
 import { createServices, type ServiceContext } from './core/services/index.ts';
@@ -13,9 +14,12 @@ import { mcpModule } from './modules/mcp/index.ts';
 import { voiceModule } from './modules/voice/index.ts';
 
 const config = loadConfig();
-const { db, close } = openDb({ path: config.dbPath, migrationsFolder: config.migrationsDir });
+const { db, backup, close } = openDb({ path: config.dbPath, migrationsFolder: config.migrationsDir });
 const ctx: ServiceContext = { db, bus: new EventBus(), rules: config.rules, now: () => new Date() };
 const services = createServices(ctx);
+
+const stopBackups =
+  config.backups.keep > 0 ? scheduleBackups({ dir: config.backups.dir, keep: config.backups.keep, backup }) : () => {};
 
 const providers = createProviders(config.ai);
 for (const reason of Object.values(providers.reasons)) if (reason) console.log(`AI: ${reason}`);
@@ -54,6 +58,7 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: config.hos
 });
 
 function shutdown() {
+  stopBackups();
   server.close();
   close();
   process.exit(0);

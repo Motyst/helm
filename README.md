@@ -47,14 +47,30 @@ your network can connect directly.
 
 - Update: `git pull`, then `docker compose up -d --build`.
 - Logs: `docker compose logs -f helm`.
-- Back up the database while it runs (a consistent copy, safe with live writes):
+- Logs are rotated (at most about 15 MB).
+
+### Backups
+
+Helm saves a copy of the database every day (`helm-YYYY-MM-DD.db`) and keeps the newest 14
+(`HELM_BACKUP_KEEP`). In Docker they're in the volume, under `/data/backups`. Copies taken
+while Helm runs are consistent, even mid-write.
+
+- Copy them out of the container, then keep them somewhere other than this machine:
 
   ```bash
-  docker compose exec helm node -e "require('better-sqlite3')('/data/helm.db').backup('/data/backup.db').then(() => console.log('saved'))"
-  docker compose cp helm:/data/backup.db ./helm-backup.db
+  docker compose cp helm:/data/backups ./helm-backups
   ```
 
-- Bring over the database from `pnpm start`: stop that server first, then
+- Restore one (this replaces what's in the volume):
+
+  ```bash
+  docker compose stop helm
+  docker compose run --rm helm node -e "require('better-sqlite3')('/data/backups/helm-2026-09-24.db').backup('/data/helm.db').then(() => console.log('restored'))"
+  docker compose start helm
+  ```
+
+- Bring over a database from somewhere else, such as `pnpm start` on this machine (stop that
+  server first) or a backup file: put it in a folder as `helm.db`, then
 
   ```bash
   docker compose stop helm
@@ -62,7 +78,7 @@ your network can connect directly.
   docker compose start helm
   ```
 
-  This replaces what's in the volume.
+  Use your folder in place of `./apps/server/data`. This also replaces what's in the volume.
 
 ## Phone and other devices
 
@@ -84,6 +100,73 @@ AI assistants on other devices use the same address, for example
 
 Use `tailscale serve`, not `tailscale funnel`: funnel puts Helm on the public internet. To stop
 serving: `tailscale serve reset`.
+
+## Raspberry Pi
+
+A Pi makes a good always-on home for Helm: it uses little power and stays on when your laptop
+sleeps. A Pi 4 or 5 with 2 GB or more works; the steps assume Raspberry Pi OS Lite (64-bit).
+
+1. **Set up the Pi.** In Raspberry Pi Imager, choose Raspberry Pi OS Lite (64-bit). In its
+   settings, set the hostname (say `helm`), your user and password, and turn on SSH. Start the
+   Pi, then from your computer: `ssh you@helm.local`.
+
+2. **Install Docker and Tailscale** on the Pi:
+
+   ```bash
+   curl -fsSL https://get.docker.com | sh
+   sudo usermod -aG docker $USER      # then log out and back in
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up                  # open the link it prints and sign in
+   ```
+
+3. **Get Helm.** The repository is private, so sign in to GitHub first (`sudo apt install gh`,
+   then `gh auth login`):
+
+   ```bash
+   gh repo clone Motyst/helm && cd helm
+   ```
+
+4. **Settings.** From your computer, copy your `.env` over (it holds the password and the OpenAI
+   key, so don't commit it or post it anywhere):
+
+   ```bash
+   scp .env you@helm.local:~/helm/.env
+   ```
+
+   On the Pi, set `HELM_COOKIE_SECURE=true` in `~/helm/.env` (Helm is reached over HTTPS there).
+
+5. **Start it:** `docker compose up -d --build`. The first build takes a few minutes; after
+   that Helm starts with the Pi, and restarts if it stops.
+
+6. **Bring your tasks.** Stop Helm on your computer first, so its database is complete. Then copy
+   the database over and import it (see [Backups](#backups)):
+
+   ```bash
+   # on your computer (with Docker, first: docker compose cp helm:/data/backups/<newest> ./helm.db)
+   ssh you@helm.local mkdir -p helm/import
+   scp apps/server/data/helm.db you@helm.local:~/helm/import/helm.db
+   # on the Pi, in ~/helm
+   docker compose stop helm
+   docker compose run --rm -v ./import:/import helm node -e "require('better-sqlite3')('/import/helm.db').backup('/data/helm.db').then(() => console.log('imported'))"
+   docker compose start helm
+   rm -r import
+   ```
+
+7. **Open it on your devices.** On the Pi: `sudo tailscale serve --bg 8787`. It prints the
+   address, like `https://helm.your-tailnet.ts.net`, and keeps serving after restarts. Then
+   follow [Phone and other devices](#phone-and-other-devices) from step 5. AI assistants keep
+   their tokens (they're in the database); point them at the new `/mcp` address.
+
+Update: `cd ~/helm && git pull && docker compose up -d --build && docker image prune -f`.
+
+Keep copies of the backups off the Pi, since SD cards do fail. From your computer, for example:
+
+```bash
+ssh you@helm.local "cd helm && docker compose cp helm:/data/backups ./helm-backups"
+scp -r you@helm.local:~/helm/helm-backups ./helm-backups
+```
+
+A USB SSD lasts longer than an SD card, but Helm writes little, so an SD card is fine to start.
 
 ## Voice input
 

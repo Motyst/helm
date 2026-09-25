@@ -7,3 +7,5 @@ data/
 .env.local
 coverage/
 .DS_Store
+helm-backups/
+import/

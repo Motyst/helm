@@ -16,6 +16,12 @@ services:
     volumes:
       - helm-data:/data
     restart: unless-stopped
+    # Rotated, compressed logs: a few MB at most, so an SD card never fills up with them.
+    logging:
+      driver: local
+      options:
+        max-size: 5m
+        max-file: "3"
 
 volumes:
   helm-data:

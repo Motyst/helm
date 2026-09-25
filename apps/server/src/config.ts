@@ -1,3 +1,4 @@
+import { dirname, join } from 'node:path';
 import type { ProviderConfig } from '@helm/providers';
 import { z } from 'zod';
 
@@ -7,6 +8,9 @@ const Env = z.object({
   HELM_HOST: z.string().trim().default('127.0.0.1'),
   HELM_DB_PATH: z.string().default('./data/helm.db'),
   HELM_MIGRATIONS_DIR: z.string().optional(),
+  // Daily copies of the database. Default: a `backups` folder next to it.
+  HELM_BACKUP_DIR: z.string().trim().optional(),
+  HELM_BACKUP_KEEP: z.coerce.number().int().min(0).default(14),
   HELM_OWNER_PASSWORD: z.string().min(1, 'HELM_OWNER_PASSWORD is required'),
   HELM_SESSION_SECRET: z.string().min(16, 'HELM_SESSION_SECRET must be at least 16 chars'),
   HELM_COOKIE_SECURE: z.stringbool().default(false),
@@ -36,6 +40,8 @@ export interface Config {
   dbPath: string;
   /** Where migration SQL lives, when not next to the code (running the bundle outside Docker). */
   migrationsDir?: string;
+  /** Daily database copies: where, and how many to keep (0 = off). */
+  backups: { dir: string; keep: number };
   ownerPassword: string;
   sessionSecret: string;
   cookieSecure: boolean;
@@ -58,6 +64,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     host: e.HELM_HOST,
     dbPath: e.HELM_DB_PATH,
     migrationsDir: e.HELM_MIGRATIONS_DIR || undefined,
+    backups: {
+      dir: e.HELM_BACKUP_DIR || join(dirname(e.HELM_DB_PATH), 'backups'),
+      keep: e.HELM_DB_PATH === ':memory:' ? 0 : e.HELM_BACKUP_KEEP,
+    },
     ownerPassword: e.HELM_OWNER_PASSWORD,
     sessionSecret: e.HELM_SESSION_SECRET,
     cookieSecure: e.HELM_COOKIE_SECURE,

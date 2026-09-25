@@ -23,6 +23,8 @@ export interface OpenDbOptions {
 
 export interface DbHandle {
   db: Db;
+  /** A consistent copy of the database at `dest`, taken while it stays in use. */
+  backup(dest: string): Promise<unknown>;
   close(): void;
 }
 
@@ -33,11 +35,14 @@ export function openDb({ path, migrationsFolder = defaultMigrations }: OpenDbOpt
 
   const sqlite = new Database(path);
   sqlite.pragma('journal_mode = WAL');
+  // Safe with WAL (a power cut can lose the last commit, never corrupt the file) and far fewer
+  // disk syncs, which matters on an SD card.
+  sqlite.pragma('synchronous = NORMAL');
   sqlite.pragma('foreign_keys = ON');
   sqlite.pragma('busy_timeout = 5000');
 
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder });
 
-  return { db, close: () => sqlite.close() };
+  return { db, backup: (dest) => sqlite.backup(dest), close: () => sqlite.close() };
 }
