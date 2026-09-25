@@ -249,3 +249,7 @@ same services with a `Principal`, so scope checks and events happen in one place
 
 See `.env.example`. Task rules are config, not code:
 `HELM_IN_PROGRESS_LIMIT` (default 1, 0 = unlimited) and `HELM_MAX_SUBTASK_DEPTH` (default 1).
+
+## License
+
+[MIT](LICENSE)
