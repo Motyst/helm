@@ -2,6 +2,89 @@
 
 Personal live task board, readable by you and by AI agents.
 
+Helm is one calm board for everything you're doing: open on a second monitor, installed on your
+phone, and readable and writable by AI assistants through a REST API and MCP, with your
+permission. Changes show up everywhere at once.
+
+![The board on a desktop: projects as bins, tasks grouped by priority](docs/screenshots/desktop-board.png)
+
+<sub>Screenshots show a demo board with sample tasks.</sub>
+
+## How it works
+
+### Tasks
+
+A task has a title, notes, a project, a priority and an estimate, and can have one level of
+subtasks. Priority is one of three words rather than a number: **Now** (today), **Soon** (the
+next few days) or **Someday** (no rush). Tasks without a project go to the Inbox.
+
+Only one task is in progress at a time (`HELM_IN_PROGRESS_LIMIT`); starting another pauses the
+one before. Every task records where it came from: typed in, spoken, or added by an AI
+assistant (`ai:<name>`).
+
+### Focus
+
+![Focus on a desktop: the task in progress, its subtasks and what's next](docs/screenshots/desktop-focus.png)
+
+The view to leave open. The task in progress sits at the top in large type, with its subtasks
+and a timeline of time spent against the estimate (it turns to the accent color when you run
+over). Below it: what's up next, then the rest of Now and Soon, each with a Start button.
+
+### Board, Done and your phone
+
+<p>
+  <img src="docs/screenshots/phone-focus.png" width="250" alt="Focus on a phone">
+  <img src="docs/screenshots/phone-board.png" width="250" alt="Board on a phone, one bin per project">
+  <img src="docs/screenshots/phone-done.png" width="250" alt="Done log on a phone, grouped by day">
+</p>
+
+- **Board**: one bin per project, tasks grouped by priority inside it. Drag a task to another
+  bin or priority, reorder within one, collapse bins you're not looking at.
+- **Done**: what you finished, grouped by day with a time for each, filtered by date range or
+  project. Reopen anything finished by mistake.
+- **On a phone** Helm installs from the browser like an app and opens offline with the last
+  board it saw. The microphone floats at the bottom right, in thumb reach.
+
+Everything is live: a change on one device, or by an AI assistant, appears on the others within
+a moment. Keys on a desktop: **N** new task, **V** voice, **A** assistant, **F**/**B**/**D** to
+switch views.
+
+### Voice
+
+<p>
+  <img src="docs/screenshots/phone-voice-listening.png" width="250" alt="Recording a task by voice">
+  <img src="docs/screenshots/phone-voice-review.png" width="250" alt="The task drafted from what was said, ready to check">
+</p>
+
+Say what needs doing, the way you'd tell a person. Helm transcribes it and fills in the title,
+project, priority, estimate and subtasks, then opens the task with what you said above it.
+Nothing is saved until you press Add task, and several to-dos in one recording become one draft
+each. See [Voice input](#voice-input).
+
+### Assistant panel
+
+![The assistant suggesting an order, with a reason for each task](docs/screenshots/desktop-assistant.png)
+
+**Suggest order** ranks your open tasks with a one-line reason each. Change any priority or
+position, then apply; Undo puts everything back. **Chat** answers questions about the board
+and proposes changes (add, edit, start, finish; never delete) that you tick and apply. See
+[Assistant](#assistant).
+
+### Themes
+
+![The six themes on a phone](docs/screenshots/themes.png)
+
+Harbor (the default, following your device between light and dark), Desert, Beach, Deep
+forest, Prairie and Night. Each has a woodblock-print landscape along the bottom of the screen,
+drawn in the theme's own colors, which you can turn off. Chosen in Settings, per device.
+
+### AI agents
+
+In Settings, create a token for each assistant or script: read only or read and change, all
+projects or only some, with an optional expiry. It then works with the board through MCP at
+`/mcp` or the REST API at `/api/v1`, and anything it adds is labelled with its name. See
+[Connect AI assistants](#connect-ai-assistants).
+
 ## Run locally
 
 ```bash
