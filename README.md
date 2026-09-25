@@ -72,7 +72,18 @@ and proposes changes (add, edit, start, finish; never delete) that you tick and 
 
 ### Themes
 
-![The six themes on a phone](docs/screenshots/themes.png)
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/theme-harbor.png" width="250" alt="Harbor theme: Fuji across a calm bay"><br>Harbor</td>
+    <td align="center"><img src="docs/screenshots/theme-desert.png" width="250" alt="Desert theme: dunes under a low sun"><br>Desert</td>
+    <td align="center"><img src="docs/screenshots/theme-beach.png" width="250" alt="Beach theme: a great wave with Fuji beyond it"><br>Beach</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/theme-forest.png" width="250" alt="Deep forest theme: cedars in mist and pines"><br>Deep forest</td>
+    <td align="center"><img src="docs/screenshots/theme-prairie.png" width="250" alt="Prairie theme: pampas grass and rolling hills"><br>Prairie</td>
+    <td align="center"><img src="docs/screenshots/theme-night.png" width="250" alt="Night theme: geese crossing the moon"><br>Night</td>
+  </tr>
+</table>
 
 Harbor (the default, following your device between light and dark), Desert, Beach, Deep
 forest, Prairie and Night. Each has a woodblock-print landscape along the bottom of the screen,
