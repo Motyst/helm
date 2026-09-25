@@ -1,7 +1,9 @@
-import { THEMES, setTheme, useTheme } from '../../ui/themes.ts';
+import { SceneArt } from '../../ui/Scenery.tsx';
+import { THEMES, setScenery, setTheme, useScenery, useTheme } from '../../ui/themes.ts';
 
 export function ThemeSection() {
   const theme = useTheme();
+  const scenery = useScenery();
 
   return (
     <section className="settings-section" aria-labelledby="theme-heading">
@@ -21,6 +23,7 @@ export function ThemeSection() {
             />
             {/* A tiny board drawn in that theme's own colors. */}
             <span className="theme-swatch" data-theme={t.id} aria-hidden="true">
+              {scenery && <SceneArt theme={t.id} />}
               <span className="sw-heading" />
               <span className="sw-task sw-now">
                 <span />
@@ -34,6 +37,13 @@ export function ThemeSection() {
           </label>
         ))}
       </div>
+      <label className="choice">
+        <input type="checkbox" checked={scenery} onChange={(e) => setScenery(e.target.checked)} />
+        <span>
+          <strong>Show the landscape</strong>
+          <span className="choice-hint">A woodblock-style picture of the theme along the bottom of the screen.</span>
+        </span>
+      </label>
     </section>
   );
 }

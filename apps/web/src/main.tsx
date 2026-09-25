@@ -10,6 +10,7 @@ import { App } from './app/App.tsx';
 import { ApiError } from './lib/api.ts';
 import { PERSISTED_KEYS, clearUserData, keys } from './lib/queries.ts';
 import './ui/theme.css';
+import { Scenery } from './ui/Scenery.tsx';
 import { startThemes } from './ui/themes.ts';
 
 startThemes();
@@ -82,6 +83,7 @@ createRoot(document.getElementById('root')!).render(
         },
       }}
     >
+      <Scenery />
       <App />
     </PersistQueryClientProvider>
   </StrictMode>,

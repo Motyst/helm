@@ -90,8 +90,6 @@ export function FocusView() {
         )}
       </section>
 
-      <Contour />
-
       <section className="focus-queue">
         {current && upNext && (
           <div className="queue-block">
@@ -246,15 +244,5 @@ function QueueRow({
         Start
       </button>
     </div>
-  );
-}
-
-/** Two soft depth contours, as a divider. */
-function Contour() {
-  return (
-    <svg className="contour" viewBox="0 0 1200 24" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M0 9 C 150 3, 300 15, 450 9 S 750 3, 900 9 S 1100 14, 1200 8" />
-      <path d="M0 17 C 180 12, 320 22, 500 17 S 800 11, 950 17 S 1120 21, 1200 16" />
-    </svg>
   );
 }

@@ -4,9 +4,9 @@ export const THEMES = [
   { id: 'harbor', name: 'Harbor', hint: 'Chart paper by day, deep water at night. Follows your device.' },
   { id: 'desert', name: 'Desert', hint: 'Dune sand, sandstone and red rock.' },
   { id: 'beach', name: 'Beach', hint: 'Sea foam, deep water and coral.' },
-  { id: 'forest', name: 'Deep forest', hint: 'Dark pine and moss, with a firefly glow.' },
+  { id: 'forest', name: 'Deep forest', hint: 'Moss green and pine shade, with a firefly glow.' },
   { id: 'prairie', name: 'Prairie', hint: 'Pale wheat under a bluebonnet sky.' },
-  { id: 'night', name: 'Night', hint: 'Plain dark with a moonlight accent.' },
+  { id: 'night', name: 'Night', hint: 'Moonlit dark, with geese crossing the moon.' },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];
@@ -57,9 +57,12 @@ let current = savedTheme();
 export function startThemes() {
   applyTheme(current);
   window.addEventListener('storage', (e) => {
-    if (e.key !== KEY) return;
-    current = savedTheme();
-    applyTheme(current);
+    if (e.key === KEY) {
+      current = savedTheme();
+      applyTheme(current);
+    } else if (e.key === SCENERY_KEY) {
+      scenery = savedScenery();
+    } else return;
     for (const l of listeners) l();
   });
 }
@@ -71,4 +74,31 @@ function subscribe(listener: () => void) {
 
 export function useTheme(): ThemeId {
   return useSyncExternalStore(subscribe, () => current);
+}
+
+// The picture along the bottom of the screen (see Scenery.tsx). On unless turned off, per device.
+const SCENERY_KEY = 'helm.scenery';
+
+function savedScenery(): boolean {
+  try {
+    return localStorage.getItem(SCENERY_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+let scenery = savedScenery();
+
+export function setScenery(on: boolean) {
+  try {
+    localStorage.setItem(SCENERY_KEY, on ? 'on' : 'off');
+  } catch {
+    // Storage blocked: applies until the page reloads.
+  }
+  scenery = on;
+  for (const l of listeners) l();
+}
+
+export function useScenery(): boolean {
+  return useSyncExternalStore(subscribe, () => scenery);
 }

@@ -58,16 +58,16 @@
   color-scheme: light;
 }
 
-/* Deep forest: dark pine and moss, with a firefly glow. */
+/* Deep forest: moss green and pine shade, with a firefly glow. */
 [data-theme='forest'] {
-  --water: #0f1a14;
-  --shallows: #17271e;
-  --ink: #dce6d5;
-  --ink-soft: #93aa92;
-  --contour: #46664f;
-  --contour-faint: #233a2c;
-  --accent: #e2b650;
-  --accent-soft: #e2b6502e;
+  --water: #26402f;
+  --shallows: #314d3c;
+  --ink: #eaf0e4;
+  --ink-soft: #b7cab3;
+  --contour: #6a9072;
+  --contour-faint: #3d5a47;
+  --accent: #f2c865;
+  --accent-soft: #f2c8652e;
   color-scheme: dark;
 }
 
@@ -121,10 +121,14 @@
   box-sizing: border-box;
 }
 
+/* On <html> only: body stays transparent so the landscape (z-index -1, see scenery.css) shows. */
+html {
+  background: var(--water);
+}
+
 html,
 body {
   margin: 0;
-  background: var(--water);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 100%;

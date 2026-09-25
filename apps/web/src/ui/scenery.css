@@ -1,0 +1,94 @@
+/* The landscape behind the app (Scenery.tsx). Colors are the theme's own, mixed far toward the
+   page color: a tint you notice, never something to read around. */
+
+.scenery {
+  position: fixed;
+  inset: auto 0 0;
+  /* Phones see most of the scene; wide screens crop a little sky instead of the sides. */
+  height: clamp(11rem, 32vw, 40vh);
+  /* Behind everything, above the page background. */
+  z-index: -1;
+  pointer-events: none;
+  /* Fade in from the top, so it rises out of the page rather than sitting on it. */
+  mask-image: linear-gradient(to bottom, transparent, #000 30%);
+}
+
+.scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  --sc-line: color-mix(in oklab, var(--ink) 20%, var(--water));
+  --sc-1: color-mix(in oklab, var(--contour) 12%, var(--water));
+  --sc-2: color-mix(in oklab, var(--contour) 22%, var(--water));
+  --sc-3: color-mix(in oklab, var(--contour) 30%, var(--water));
+  --sc-deep: color-mix(in oklab, var(--ink) 8%, var(--sc-3));
+  --sc-sun: color-mix(in oklab, var(--accent) 24%, var(--water));
+  --sc-foam: color-mix(in oklab, white 60%, var(--water));
+  --sc-mist: color-mix(in oklab, white 40%, var(--water));
+  --sc-moon: color-mix(in oklab, var(--accent) 18%, var(--water));
+}
+/* Dark themes: foam, mist and moon are lighter than the page, not whiter than white. */
+[data-theme='forest'] .scene,
+[data-theme='night'] .scene {
+  --sc-foam: color-mix(in oklab, var(--ink) 22%, var(--water));
+  --sc-mist: color-mix(in oklab, var(--ink) 9%, var(--water));
+  --sc-moon: color-mix(in oklab, var(--ink) 30%, var(--water));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .scene,
+  [data-theme='harbor'] .scene {
+    --sc-foam: color-mix(in oklab, var(--ink) 22%, var(--water));
+    --sc-mist: color-mix(in oklab, var(--ink) 9%, var(--water));
+    --sc-moon: color-mix(in oklab, var(--ink) 30%, var(--water));
+  }
+}
+
+.scene .sc-1 { fill: var(--sc-1); }
+.scene .sc-2 { fill: var(--sc-2); }
+.scene .sc-3 { fill: var(--sc-3); }
+.scene .sc-deep { fill: var(--sc-deep); }
+.scene .sc-sun { fill: var(--sc-sun); }
+.scene .sc-sun-strong { fill: color-mix(in oklab, var(--accent) 45%, var(--water)); }
+.scene .sc-moon { fill: var(--sc-moon); }
+.scene .sc-foam { fill: var(--sc-foam); }
+.scene .sc-mist { fill: var(--sc-mist); }
+
+.scene .sc-stroke,
+.scene .sc-stroke-thin,
+.scene .sc-line,
+.scene .sc-line-soft,
+.scene .sc-hatch {
+  stroke: var(--sc-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scene .sc-stroke { stroke-width: 2.5; }
+.scene .sc-stroke-thin { stroke-width: 1.5; }
+.scene .sc-line { fill: none; stroke-width: 2.5; }
+.scene .sc-line-soft { fill: none; stroke-width: 1.5; }
+.scene .sc-hatch { fill: none; stroke-width: 1.5; opacity: 0.8; }
+
+/* Foam claws: an outlined stroke, drawn as a wide dark stroke under a narrower light one. */
+.scene .sc-claw path { fill: none; stroke-linecap: round; }
+.scene .sc-claw-edge { stroke: var(--sc-line); stroke-width: 11; }
+.scene .sc-claw-fill { stroke: var(--sc-foam); stroke-width: 6; }
+
+.scene .sc-trunk path {
+  fill: none;
+  stroke: color-mix(in oklab, var(--ink) 26%, var(--water));
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+.scene .sc-grass {
+  fill: none;
+  stroke: var(--sc-3);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.scene .sc-plume {
+  fill: none;
+  stroke: var(--sc-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
