@@ -3,27 +3,44 @@ import { useScenery, useTheme, type ThemeId } from './themes.ts';
 import './scenery.css';
 
 /*
- * A landscape along the bottom of the screen for each theme, drawn in the manner of Japanese
- * woodblock prints: flat color, dark outlines, clawed foam, bands of mist (kasumi) and a sun
- * or moon disk. Every color comes from the theme's own variables (see scenery.css), mixed far
- * toward the page color so text on top stays readable.
+ * A landscape for each theme, drawn in the manner of Japanese woodblock prints: flat color, dark
+ * outlines, clawed foam, bands of mist (kasumi) and a sun or moon disk. Every color comes from
+ * the theme's own variables (see scenery.css), mixed far toward the page color so text on top
+ * stays readable.
  *
- * Drawn in a 1600 × 600 box anchored at the bottom center: the main subject sits between
- * x 500 and 1100, which is what a phone shows.
+ * Two pictures per theme:
+ * - along the bottom, a 1600 × 600 scene anchored at the bottom center; the main subject sits
+ *   between x 500 and 1100, which is what a phone shows;
+ * - along the top, a lighter 1600 × 300 sky. Wide screens show all of it; phones show only its
+ *   two ends as small corner pieces, so both ends carry a detail of their own.
  */
 
 const W = 1600;
 const H = 600;
+const SKY_H = 300;
+/** Width of each end of the sky that a phone shows as a corner piece. */
+const CORNER_W = 360;
 
-/** The picture behind the app, for the current theme. */
+/** The pictures behind the app, for the current theme. */
 export function Scenery() {
   const theme = useTheme();
   const on = useScenery();
   if (!on) return null;
   return (
-    <div className="scenery" aria-hidden="true">
-      <SceneArt theme={theme} />
-    </div>
+    <>
+      <div className="sky" aria-hidden="true">
+        <SkyArt theme={theme} />
+      </div>
+      <div className="sky-corner sky-left" aria-hidden="true">
+        <SkyArt theme={theme} view="left" />
+      </div>
+      <div className="sky-corner sky-right" aria-hidden="true">
+        <SkyArt theme={theme} view="right" />
+      </div>
+      <div className="scenery" aria-hidden="true">
+        <SceneArt theme={theme} />
+      </div>
+    </>
   );
 }
 
@@ -36,6 +53,17 @@ export function SceneArt({ theme }: { theme: ThemeId }) {
   );
 }
 
+function SkyArt({ theme, view = 'full' }: { theme: ThemeId; view?: 'full' | 'left' | 'right' }) {
+  const Sky = SKIES[theme];
+  const box = view === 'full' ? `0 0 ${W} ${SKY_H}` : `${view === 'left' ? 0 : W - CORNER_W} 0 ${CORNER_W} ${SKY_H}`;
+  const align = view === 'full' ? 'xMidYMin slice' : view === 'left' ? 'xMinYMin meet' : 'xMaxYMin meet';
+  return (
+    <svg className="scene" viewBox={box} preserveAspectRatio={align}>
+      <Sky />
+    </svg>
+  );
+}
+
 const SCENES: Record<ThemeId, () => ReactNode> = {
   harbor: Harbor,
   desert: Desert,
@@ -43,6 +71,17 @@ const SCENES: Record<ThemeId, () => ReactNode> = {
   forest: Forest,
   prairie: Prairie,
   night: Night,
+  neotokyo: NeoTokyo,
+};
+
+const SKIES: Record<ThemeId, () => ReactNode> = {
+  harbor: HarborSky,
+  desert: DesertSky,
+  beach: BeachSky,
+  forest: ForestSky,
+  prairie: PrairieSky,
+  night: NightSky,
+  neotokyo: NeoTokyoSky,
 };
 
 // ---------- Drawing helpers ----------
@@ -365,6 +404,243 @@ function Night() {
       <Mist x={620} y={455} w={640} h={28} />
       <path className="sc-2 sc-stroke-thin" d="M0 560 C 240 520, 480 540, 700 530 C 920 520, 1180 555, 1600 530 L1600 600 L0 600 Z" />
       <Pine x={1330} y={568} s={0.6} />
+    </>
+  );
+}
+
+/** Neo Tokyo: a neon city at night. A striped low sun behind two rows of towers, lit windows,
+ *  a vertical sign and an elevated train, with the woodblock mist band between the rows. */
+function NeoTokyo() {
+  const rnd = random(31);
+  const far: ReactNode[] = [];
+  for (let x = -30, i = 0; x < W + 30; i++) {
+    const w = 44 + rnd() * 60;
+    const h = 120 + rnd() * 150;
+    far.push(<rect key={i} className="sc-1 sc-stroke-thin" x={f(x)} y={f(470 - h)} width={f(w)} height={f(h)} />);
+    if (rnd() > 0.6) far.push(<path key={`a${i}`} className="sc-line-soft" d={`M${f(x + w / 2)} ${f(470 - h)} l0 -28`} />);
+    x += w + 6 + rnd() * 18;
+  }
+  const near: ReactNode[] = [];
+  const windows: string[] = [];
+  for (let x = -20, i = 0; x < W + 20; i++) {
+    const w = 60 + rnd() * 70;
+    const h = 90 + rnd() * 150;
+    const top = 560 - h;
+    near.push(<rect key={i} className="sc-2 sc-stroke-thin" x={f(x)} y={f(top)} width={f(w)} height={f(h)} />);
+    for (let wy = top + 14; wy < 548; wy += 16)
+      for (let wx = x + 10; wx < x + w - 12; wx += 14) if (rnd() > 0.62) windows.push(`M${f(wx)} ${f(wy)}h6v6h-6z`);
+    x += w + 8 + rnd() * 20;
+  }
+  // Bands cut out of the lower half of the sun, the way neon-age posters draw it.
+  const stripes = [0, 1, 2, 3, 4].map((k) => (
+    <rect key={k} className="sc-cut" x={860} y={f(232 + k * 16 + k * k * 1.5)} width={280} height={3 + k * 2} />
+  ));
+  return (
+    <>
+      <circle className="sc-sun" cx={1000} cy={230} r={110} />
+      {stripes}
+      {far}
+      <Mist x={120} y={430} w={680} h={28} />
+      <Mist x={980} y={414} w={520} h={26} />
+      {near}
+      <path className="sc-windows" d={windows.join(' ')} />
+      {/* A vertical sign on a tower front, lettered in bars. */}
+      <g className="sc-neon">
+        <rect x={742} y={300} width={46} height={150} rx={6} />
+        <path d="M754 322h22 M754 344h22 M765 362v30 M754 408h22 M754 428h22" />
+      </g>
+      {/* The elevated line: a deck on pillars and a train crossing. */}
+      <path className="sc-3 sc-stroke-thin" d={`M0 520 H${W} V532 H0 Z`} />
+      {Array.from({ length: 14 }, (_, i) => (
+        <rect key={i} className="sc-3" x={40 + i * 120} y={532} width={14} height={68} />
+      ))}
+      <rect className="sc-3 sc-stroke" x={260} y={488} width={360} height={32} rx={10} />
+      <path
+        className="sc-neon-2"
+        d="M282 498h26 M322 498h26 M362 498h26 M402 498h26 M442 498h26 M482 498h26 M522 498h26 M562 498h26"
+      />
+    </>
+  );
+}
+
+// ---------- Skies: the lighter detail along the top ----------
+
+/** A woodblock cloud: flat base, a row of round bumps, a line of shading under the bumps. */
+function Cloud({ x, y, w, bumps = 5 }: { x: number; y: number; w: number; bumps?: number }) {
+  const bw = w / bumps;
+  let d = `M${x} ${y}`;
+  for (let i = 0; i < bumps; i++) {
+    const r = bw * (0.55 + ((i * 37) % 5) * 0.06);
+    d += ` A ${f(r)} ${f(r)} 0 0 1 ${f(x + bw * (i + 1))} ${y}`;
+  }
+  return (
+    <g>
+      <path className="sc-foam sc-stroke-thin" d={`${d} Z`} />
+      <path className="sc-hatch" d={`M${f(x + bw * 0.6)} ${y - 6} h${f(w - bw * 1.2)}`} />
+    </g>
+  );
+}
+
+/** Birds in flight, each [x, y, scale]. */
+function Birds({ list }: { list: [number, number, number][] }) {
+  const bird = ([x, y, s]: [number, number, number]) =>
+    `M${x - 16 * s} ${y - 5 * s} Q${x - 7 * s} ${y - 7 * s} ${x} ${y} Q${x + 7 * s} ${y - 7 * s} ${x + 16 * s} ${y - 5 * s}`;
+  return <path className="sc-line" d={list.map(bird).join(' ')} />;
+}
+
+/** Heat shimmer: a short wavy line. */
+function Shimmer({ x, y, w }: { x: number; y: number; w: number }) {
+  const q = w / 4;
+  return <path className="sc-hatch" d={`M${x} ${y} q ${q / 2} -8 ${q} 0 t ${q} 0 t ${q} 0 t ${q} 0`} />;
+}
+
+/** Pine boughs reaching in from the top left corner (mirrored for the right). */
+function Bough({ flip = false }: { flip?: boolean }) {
+  const pad = (cx: number, cy: number, w: number, h: number) => {
+    const b = 4;
+    const bw = w / b;
+    const x0 = cx - w / 2;
+    let d = `M${f(x0)} ${cy} L${f(x0)} ${f(cy - h * 0.5)}`;
+    for (let i = 0; i < b; i++)
+      d += ` Q${f(x0 + bw * (i + 0.5))} ${f(cy - h * (1.15 + (i % 2) * 0.2))} ${f(x0 + bw * (i + 1))} ${f(cy - h * 0.5)}`;
+    return (
+      <g key={`${cx}-${cy}`}>
+        <path className="sc-3 sc-stroke" d={`${d} L${f(x0 + w)} ${cy} Z`} />
+        <path
+          className="sc-2 sc-stroke-thin"
+          d={`M${f(cx - w * 0.25)} ${f(cy - h * 0.55)} Q${cx} ${f(cy - h * 1.3)} ${f(cx + w * 0.3)} ${f(cy - h * 0.55)} Z`}
+        />
+      </g>
+    );
+  };
+  return (
+    <g transform={flip ? `translate(${W} 0) scale(-1 1)` : undefined}>
+      <g className="sc-trunk">
+        <path d="M-20 40 C 120 60, 220 90, 330 150 M150 70 C 190 110, 210 150, 200 200 M260 120 C 320 125, 380 140, 430 175" />
+      </g>
+      {pad(120, 110, 150, 30)}
+      {pad(250, 165, 140, 28)}
+      {pad(200, 235, 120, 26)}
+      {pad(410, 205, 130, 26)}
+      {pad(40, 60, 130, 26)}
+    </g>
+  );
+}
+
+/** Four-pointed stars, each [x, y, radius]. */
+function Stars({ list }: { list: [number, number, number][] }) {
+  const star = ([x, y, r]: [number, number, number]) =>
+    `M${x} ${y - r} L${f(x + r * 0.25)} ${f(y - r * 0.25)} L${x + r} ${y} L${f(x + r * 0.25)} ${f(y + r * 0.25)} ` +
+    `L${x} ${y + r} L${f(x - r * 0.25)} ${f(y + r * 0.25)} L${x - r} ${y} L${f(x - r * 0.25)} ${f(y - r * 0.25)} Z`;
+  return <path className="sc-moon" d={list.map(star).join(' ')} />;
+}
+
+function HarborSky() {
+  return (
+    <>
+      <Mist x={-40} y={40} w={520} h={26} />
+      <Birds list={[[220, 120, 1.3], [290, 88, 1], [350, 140, 0.8], [1450, 160, 0.8]]} />
+      <Cloud x={690} y={170} w={230} />
+      <circle className="sc-sun" cx={1320} cy={95} r={46} />
+      <Mist x={1150} y={104} w={380} h={22} />
+    </>
+  );
+}
+
+function DesertSky() {
+  return (
+    <>
+      <Mist x={-30} y={60} w={600} h={26} />
+      <Shimmer x={90} y={175} w={240} />
+      <Shimmer x={700} y={160} w={280} />
+      <Shimmer x={620} y={210} w={200} />
+      {/* A hawk riding the heat, and a smaller one further off. */}
+      <Birds list={[[1340, 120, 2], [1480, 165, 1]]} />
+      <Mist x={1100} y={40} w={560} h={26} />
+    </>
+  );
+}
+
+function BeachSky() {
+  return (
+    <>
+      <Cloud x={60} y={110} w={300} bumps={6} />
+      <Cloud x={660} y={60} w={220} bumps={4} />
+      <Cloud x={1200} y={90} w={340} bumps={7} />
+      <Birds list={[[400, 160, 0.9], [560, 170, 1.2], [610, 150, 0.9], [1420, 190, 1], [1480, 165, 0.8]]} />
+      <Mist x={760} y={210} w={420} h={22} />
+    </>
+  );
+}
+
+function ForestSky() {
+  return (
+    <>
+      <Bough />
+      <Bough flip />
+      <Mist x={560} y={60} w={480} h={24} />
+    </>
+  );
+}
+
+function PrairieSky() {
+  return (
+    <>
+      <Cloud x={40} y={120} w={360} bumps={7} />
+      <Cloud x={620} y={70} w={240} bumps={5} />
+      <Cloud x={1120} y={100} w={420} bumps={8} />
+      <Birds
+        list={[[330, 175, 0.9], [370, 155, 0.8], [1250, 190, 1.1], [1290, 170, 0.9], [1330, 150, 0.8], [1370, 135, 0.7], [1410, 122, 0.6]]}
+      />
+      <Mist x={-20} y={210} w={380} h={22} />
+    </>
+  );
+}
+
+function NightSky() {
+  return (
+    <>
+      <Stars
+        list={[
+          [60, 150, 6], [120, 60, 9], [260, 140, 5], [420, 80, 7], [330, 230, 4], [560, 190, 4], [640, 120, 3],
+          [700, 50, 6], [860, 120, 8], [990, 60, 4], [1000, 230, 5], [1130, 170, 6], [1260, 80, 9], [1350, 220, 3],
+          [1420, 140, 5], [1540, 60, 7],
+        ]}
+      />
+      {/* A shooting star. */}
+      <path className="sc-line" d="M1480 40 L 1300 110" />
+      <circle className="sc-moon" cx={1480} cy={40} r={5} />
+      <Mist x={-40} y={250} w={520} h={22} />
+      <Mist x={900} y={20} w={360} h={22} />
+    </>
+  );
+}
+
+/** Neo Tokyo: power lines sagging across the top, hanging signs, a drone with its lights. */
+function NeoTokyoSky() {
+  return (
+    <>
+      <path
+        className="sc-line"
+        d="M-20 30 Q 300 110 620 40 M-20 70 Q 260 150 560 90 M980 50 Q 1300 130 1620 40 M1040 95 Q 1320 170 1620 110"
+      />
+      <path className="sc-line-soft" d="M150 72 V100 M210 80 V100 M1330 108 V132 M1400 112 V132" />
+      <g className="sc-neon">
+        <rect x={130} y={100} width={100} height={46} rx={6} />
+        <path d="M146 116h28 M146 130h18 M184 130h30 M196 116h18" />
+      </g>
+      <g className="sc-neon-2">
+        <rect x={1300} y={132} width={130} height={40} rx={6} />
+        <path d="M1316 146h40 M1316 158h24 M1370 146v14 M1392 152h22" />
+      </g>
+      <g transform="translate(760 150)">
+        <path className="sc-3 sc-stroke-thin" d="M-18 -6 h36 v12 h-36 z" />
+        <path className="sc-line" d="M-18 -4 L-42 -14 M18 -4 L42 -14" />
+        <path className="sc-line-soft" d="M-58 -16 h32 M26 -16 h32" />
+        <circle className="sc-light" cx={-10} cy={10} r={3} />
+        <circle className="sc-light-2" cx={10} cy={10} r={3} />
+      </g>
+      <Mist x={520} y={230} w={560} h={22} />
     </>
   );
 }

@@ -7,6 +7,7 @@ export const THEMES = [
   { id: 'forest', name: 'Deep forest', hint: 'Moss green and pine shade, with a firefly glow.' },
   { id: 'prairie', name: 'Prairie', hint: 'Pale wheat under a bluebonnet sky.' },
   { id: 'night', name: 'Night', hint: 'Moonlit dark, with geese crossing the moon.' },
+  { id: 'neotokyo', name: 'Neo Tokyo', hint: 'A neon city at night: magenta and cyan over indigo.' },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];

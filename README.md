@@ -38,8 +38,10 @@ over). Below it: what's up next, then the rest of Now and Soon, each with a Star
   <img src="docs/screenshots/phone-done.png" width="250" alt="Done log on a phone, grouped by day">
 </p>
 
-- **Board**: one bin per project, tasks grouped by priority inside it. Drag a task to another
-  bin or priority, reorder within one, collapse bins you're not looking at.
+- **Board**: one panel per project, with an emoji picked from its name (or one you choose) and
+  tasks grouped by priority inside it. Drag a task to another panel or priority, reorder within
+  one, and double-click a panel to fold it. Settings → Board panels sets how strongly the panels
+  stand out from the page.
 - **Done**: what you finished, grouped by day with a time for each, filtered by date range or
   project. Reopen anything finished by mistake.
 - **On a phone** Helm installs from the browser like an app and opens offline with the last
@@ -74,20 +76,23 @@ and proposes changes (add, edit, start, finish; never delete) that you tick and 
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/theme-harbor.png" width="250" alt="Harbor theme: Fuji across a calm bay"><br>Harbor</td>
-    <td align="center"><img src="docs/screenshots/theme-desert.png" width="250" alt="Desert theme: dunes under a low sun"><br>Desert</td>
-    <td align="center"><img src="docs/screenshots/theme-beach.png" width="250" alt="Beach theme: a great wave with Fuji beyond it"><br>Beach</td>
+    <td align="center"><img src="docs/screenshots/theme-harbor.png" width="200" alt="Harbor theme: Fuji across a calm bay"><br>Harbor</td>
+    <td align="center"><img src="docs/screenshots/theme-desert.png" width="200" alt="Desert theme: dunes under a low sun"><br>Desert</td>
+    <td align="center"><img src="docs/screenshots/theme-beach.png" width="200" alt="Beach theme: a great wave with Fuji beyond it"><br>Beach</td>
+    <td align="center"><img src="docs/screenshots/theme-forest.png" width="200" alt="Deep forest theme: cedars in mist, pine boughs in the corners"><br>Deep forest</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/theme-forest.png" width="250" alt="Deep forest theme: cedars in mist and pines"><br>Deep forest</td>
-    <td align="center"><img src="docs/screenshots/theme-prairie.png" width="250" alt="Prairie theme: pampas grass and rolling hills"><br>Prairie</td>
-    <td align="center"><img src="docs/screenshots/theme-night.png" width="250" alt="Night theme: geese crossing the moon"><br>Night</td>
+    <td align="center"><img src="docs/screenshots/theme-prairie.png" width="200" alt="Prairie theme: pampas grass and big-sky clouds"><br>Prairie</td>
+    <td align="center"><img src="docs/screenshots/theme-night.png" width="200" alt="Night theme: geese crossing the moon under the stars"><br>Night</td>
+    <td align="center"><img src="docs/screenshots/theme-neotokyo.png" width="200" alt="Neo Tokyo theme: a neon skyline, hanging signs and power lines"><br>Neo Tokyo</td>
+    <td></td>
   </tr>
 </table>
 
 Harbor (the default, following your device between light and dark), Desert, Beach, Deep
-forest, Prairie and Night. Each has a woodblock-print landscape along the bottom of the screen,
-drawn in the theme's own colors, which you can turn off. Chosen in Settings, per device.
+forest, Prairie, Night and Neo Tokyo. Each has a woodblock-print landscape along the bottom of
+the screen and a lighter sky along the top (on phones, just its two corners), drawn in the
+theme's own colors. You can turn the landscape off. Chosen in Settings, per device.
 
 ### AI agents
 

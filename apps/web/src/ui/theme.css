@@ -97,6 +97,20 @@
   color-scheme: dark;
 }
 
+ /* Neo Tokyo: indigo night, neon magenta, and a second neon (cyan) for the landscape's lights. */
+[data-theme='neotokyo'] {
+  --water: #120f24;
+  --shallows: #1e1a3a;
+  --ink: #efeaff;
+  --ink-soft: #aba4d4;
+  --contour: #5d52a0;
+  --contour-faint: #2d2754;
+  --accent: #ff4fb0;
+  --accent-soft: #ff4fb033;
+  --accent-2: #3fe0ff;
+  color-scheme: dark;
+}
+
 :root {
   /* Self-hosted (see main.tsx) so the installed app renders the same offline. */
   --font-sans: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible Next', system-ui, sans-serif;

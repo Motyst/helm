@@ -13,6 +13,42 @@
   mask-image: linear-gradient(to bottom, transparent, #000 30%);
 }
 
+/* The sky along the top: the whole band on wide screens, fading down into the page. */
+.sky {
+  position: fixed;
+  inset: 0 0 auto;
+  height: clamp(8rem, 22vw, 28vh);
+  z-index: -1;
+  pointer-events: none;
+  mask-image: linear-gradient(to top, transparent, #000 45%);
+}
+/* Phones: only the two ends of the sky, as small pieces in the top corners. */
+.sky-corner {
+  display: none;
+  position: fixed;
+  top: 0;
+  width: min(52vw, 17rem);
+  aspect-ratio: 360 / 300;
+  z-index: -1;
+  pointer-events: none;
+}
+.sky-left {
+  left: 0;
+  mask-image: radial-gradient(ellipse at top left, #000 45%, transparent 75%);
+}
+.sky-right {
+  right: 0;
+  mask-image: radial-gradient(ellipse at top right, #000 45%, transparent 75%);
+}
+@media (max-width: 640px) {
+  .sky {
+    display: none;
+  }
+  .sky-corner {
+    display: block;
+  }
+}
+
 .scene {
   display: block;
   width: 100%;
@@ -30,7 +66,8 @@
 }
 /* Dark themes: foam, mist and moon are lighter than the page, not whiter than white. */
 [data-theme='forest'] .scene,
-[data-theme='night'] .scene {
+[data-theme='night'] .scene,
+[data-theme='neotokyo'] .scene {
   --sc-foam: color-mix(in oklab, var(--ink) 22%, var(--water));
   --sc-mist: color-mix(in oklab, var(--ink) 9%, var(--water));
   --sc-moon: color-mix(in oklab, var(--ink) 30%, var(--water));
@@ -91,4 +128,43 @@
   stroke: var(--sc-line);
   stroke-width: 2;
   stroke-linecap: round;
+}
+
+/* Neon (Neo Tokyo): signs and lights drawn in the accent colors, with a soft glow. */
+.scene .sc-neon,
+.scene .sc-neon-2 {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scene .sc-neon {
+  stroke: color-mix(in oklab, var(--accent) 70%, var(--water));
+  filter: drop-shadow(0 0 5px color-mix(in oklab, var(--accent) 60%, transparent));
+}
+.scene .sc-neon-2 {
+  stroke: color-mix(in oklab, var(--accent-2, var(--accent)) 70%, var(--water));
+  filter: drop-shadow(0 0 5px color-mix(in oklab, var(--accent-2, var(--accent)) 60%, transparent));
+}
+.scene .sc-windows {
+  fill: color-mix(in oklab, var(--accent-2, var(--accent)) 35%, var(--water));
+}
+.scene .sc-light {
+  fill: var(--accent);
+}
+.scene .sc-light-2 {
+  fill: var(--accent-2, var(--accent));
+}
+/* Bands cut out of a sun disk: painted in the page color. */
+.scene .sc-cut {
+  fill: var(--water);
+}
+/* Neon sits behind text: quieter in the phone corners (right under the title) and at the bottom. */
+.sky-corner .sc-neon,
+.sky-corner .sc-neon-2 {
+  opacity: 0.5;
+}
+.scenery .sc-neon,
+.scenery .sc-neon-2 {
+  opacity: 0.75;
 }
