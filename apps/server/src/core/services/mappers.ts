@@ -28,6 +28,7 @@ export function toProject(r: ProjectRow): Project {
     id: r.id,
     name: r.name,
     color: r.color,
+    icon: r.icon ?? null,
     collapsed: r.collapsed,
     position: r.position,
     archivedAt: iso(r.archivedAt),

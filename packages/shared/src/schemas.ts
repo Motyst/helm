@@ -44,6 +44,8 @@ export const Project = z.object({
   id: Id,
   name: z.string(),
   color: HexColor,
+  /** An emoji chosen for the project; null means the app picks one from the name. */
+  icon: z.string().nullable(),
   collapsed: z.boolean(),
   position: z.string(),
   archivedAt: z.string().nullable(),
@@ -101,9 +103,13 @@ export const MoveTaskInput = z
   .strict();
 export type MoveTaskInput = z.input<typeof MoveTaskInput>;
 
+/** A short emoji (a few code points, e.g. flags or skin tones), not text. */
+export const ProjectIcon = z.string().trim().min(1).max(16);
+
 export const CreateProjectInput = z.object({
   name: z.string().trim().min(1).max(100),
   color: HexColor.optional(),
+  icon: ProjectIcon.nullable().optional(),
 });
 export type CreateProjectInput = z.input<typeof CreateProjectInput>;
 
@@ -111,6 +117,7 @@ export const UpdateProjectInput = z
   .object({
     name: z.string().trim().min(1).max(100),
     color: HexColor,
+    icon: ProjectIcon.nullable(),
     collapsed: z.boolean(),
   })
   .partial()

@@ -1,9 +1,10 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import { PRIORITIES, type Priority, type Project, type TaskNode } from '@helm/shared';
 import { formatMinutes } from '../../lib/format.ts';
 import { binDropId, containerId } from './board-model.ts';
+import { projectIcon } from './project-icon.ts';
 import { SortableTaskCard, type CardActions } from './TaskCard.tsx';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
@@ -29,23 +30,39 @@ export function Bin(props: BinProps) {
   const name = project?.name ?? 'Inbox';
   const header = useDroppable({ id: binDropId(bin), disabled: !collapsed });
   const bodyId = `bin-body-${bin}`;
+  const icon = projectIcon(project);
+
+  // Double-click (or double-tap) the header or empty space to fold the panel; not on tasks or buttons.
+  const onDoubleClick = (e: MouseEvent) => {
+    if ((e.target as Element).closest('button, a, input, select, textarea, .card')) return;
+    window.getSelection()?.removeAllRanges();
+    props.onToggleCollapsed();
+  };
 
   return (
     <section
       className={`bin ${collapsed ? 'is-collapsed' : ''} ${header.isOver ? 'is-drop-target' : ''} ${project ? '' : 'is-inbox'}`}
       style={project ? ({ '--bin': project.color } as CSSProperties) : undefined}
       aria-label={name}
+      onDoubleClick={onDoubleClick}
     >
       <header className="bin-head" ref={header.setNodeRef}>
         <button
           className="bin-toggle"
           aria-expanded={!collapsed}
           aria-controls={bodyId}
+          aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${name}`}
+          title="Collapse or expand (or double-click the panel)"
           onClick={props.onToggleCollapsed}
         >
           <span className="bin-chevron" aria-hidden="true" />
-          <h2 className="bin-name">{name}</h2>
         </button>
+        {icon && (
+          <span className="bin-icon" aria-hidden="true">
+            {icon}
+          </span>
+        )}
+        <h2 className="bin-name">{name}</h2>
         <span className="bin-stats">
           {ids.length} {ids.length === 1 ? 'task' : 'tasks'}
           {minutes > 0 && `, ${formatMinutes(minutes)}`}

@@ -1,9 +1,12 @@
 import { SceneArt } from '../../ui/Scenery.tsx';
-import { THEMES, setScenery, setTheme, useScenery, useTheme } from '../../ui/themes.ts';
+import { useId } from 'react';
+import { THEMES, setPanel, setScenery, setTheme, usePanel, useScenery, useTheme } from '../../ui/themes.ts';
 
 export function ThemeSection() {
   const theme = useTheme();
   const scenery = useScenery();
+  const panel = usePanel();
+  const panelId = useId();
 
   return (
     <section className="settings-section" aria-labelledby="theme-heading">
@@ -44,6 +47,24 @@ export function ThemeSection() {
           <span className="choice-hint">A woodblock-style picture of the theme along the bottom of the screen.</span>
         </span>
       </label>
+      <div className="field panel-strength">
+        <label htmlFor={panelId}>Board panels</label>
+        <div className="panel-slider">
+          <span aria-hidden="true">Subtle</span>
+          <input
+            id={panelId}
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={panel}
+            aria-valuetext={`${panel}%`}
+            onChange={(e) => setPanel(Number(e.target.value))}
+          />
+          <span aria-hidden="true">Bold</span>
+        </div>
+        <p className="field-hint">How strongly each project’s panel stands out from the page.</p>
+      </div>
     </section>
   );
 }

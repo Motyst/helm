@@ -56,6 +56,7 @@ export class ProjectService {
           id: ulid(),
           name: i.name,
           color: i.color ?? PROJECT_COLORS[total % PROJECT_COLORS.length]!,
+          icon: i.icon ?? null,
           collapsed: false,
           position: keyAfter(last),
           createdAt: now,

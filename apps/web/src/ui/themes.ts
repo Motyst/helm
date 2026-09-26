@@ -56,12 +56,16 @@ let current = savedTheme();
 /** Call once at startup: syncs the status bar color and follows theme changes made in other windows. */
 export function startThemes() {
   applyTheme(current);
+  applyPanel(panel);
   window.addEventListener('storage', (e) => {
     if (e.key === KEY) {
       current = savedTheme();
       applyTheme(current);
     } else if (e.key === SCENERY_KEY) {
       scenery = savedScenery();
+    } else if (e.key === PANEL_KEY) {
+      panel = savedPanel();
+      applyPanel(panel);
     } else return;
     for (const l of listeners) l();
   });
@@ -101,4 +105,38 @@ export function setScenery(on: boolean) {
 
 export function useScenery(): boolean {
   return useSyncExternalStore(subscribe, () => scenery);
+}
+
+// How strongly board panels stand out from the page (0-100), per device. Applied as --panel (0-1).
+const PANEL_KEY = 'helm.panels';
+export const PANEL_DEFAULT = 50;
+
+function savedPanel(): number {
+  try {
+    const v = Number(localStorage.getItem(PANEL_KEY));
+    return localStorage.getItem(PANEL_KEY) !== null && v >= 0 && v <= 100 ? v : PANEL_DEFAULT;
+  } catch {
+    return PANEL_DEFAULT;
+  }
+}
+
+let panel = savedPanel();
+
+function applyPanel(v: number) {
+  document.documentElement.style.setProperty('--panel', String(v / 100));
+}
+
+export function setPanel(v: number) {
+  try {
+    localStorage.setItem(PANEL_KEY, String(v));
+  } catch {
+    // Storage blocked: applies until the page reloads.
+  }
+  panel = v;
+  applyPanel(v);
+  for (const l of listeners) l();
+}
+
+export function usePanel(): number {
+  return useSyncExternalStore(subscribe, () => panel);
 }

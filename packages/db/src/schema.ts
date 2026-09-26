@@ -8,6 +8,8 @@ export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   color: text('color').notNull(),
+  /** An emoji shown beside the name; null = pick one from the name. */
+  icon: text('icon'),
   collapsed: integer('collapsed', { mode: 'boolean' }).notNull().default(false),
   position: text('position').notNull(),
   archivedAt: ts('archived_at'),

@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import '@fontsource-variable/atkinson-hyperlegible-next';
 import '@fontsource-variable/newsreader/wght-italic.css';
+import '@fontsource-variable/fraunces/soft.css';
 import { App } from './app/App.tsx';
 import { ApiError } from './lib/api.ts';
 import { PERSISTED_KEYS, clearUserData, keys } from './lib/queries.ts';

@@ -101,6 +101,10 @@
   /* Self-hosted (see main.tsx) so the installed app renders the same offline. */
   --font-sans: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
   --font-chart: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  /* Board headings: a heavy, soft-edged serif, like a woodblock-printed title. */
+  --font-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
+  /* How strongly board panels stand out from the page, 0 to 1 (Settings, per device). */
+  --panel: 0.5;
 
   /* Type scale (perfect fourth, 1.333) */
   --step--1: 0.8125rem;

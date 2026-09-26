@@ -84,12 +84,13 @@ function NewTokenForm({ onCreated }: { onCreated: (c: CreatedToken) => void }) {
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
 
   return (
-    <form className="token-form" onSubmit={submit}>
+    <form className="token-form" autoComplete="off" onSubmit={submit}>
       <div className="field">
         <label htmlFor={nameId}>Name</label>
         <input
           id={nameId}
           className="settings-input"
+          autoComplete="off"
           value={name}
           maxLength={64}
           placeholder="Claude Code"

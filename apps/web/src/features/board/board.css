@@ -10,19 +10,26 @@
   align-items: start;
 }
 
-/* ----- Bin: a tinted chart region per project ----- */
+/* ----- Bin: a tinted chart region per project -----
+   --panel (0-1, Settings → Board panels) sets how strongly it stands out from the page:
+   the project-colored fill, the edge, the header band and the shadow all scale with it. */
 
 .bin {
   --bin: var(--contour);
-  --bin-tint: color-mix(in oklab, var(--bin) 9%, var(--water));
-  --bin-edge: color-mix(in oklab, var(--bin) 35%, var(--contour-faint));
+  --bin-tint: color-mix(in oklab, var(--bin) calc(6% + 22% * var(--panel)), var(--water));
+  --bin-band: color-mix(in oklab, var(--bin) calc(12% + 30% * var(--panel)), var(--water));
+  --bin-edge: color-mix(in oklab, var(--bin) calc(30% + 50% * var(--panel)), var(--contour-faint));
   background: var(--bin-tint);
-  border: 1.5px solid var(--bin-edge);
+  border: calc(1.5px + 1px * var(--panel)) solid var(--bin-edge);
   border-radius: var(--radius-panel);
+  box-shadow: 0 calc(10px * var(--panel)) calc(28px * var(--panel)) calc(-14px * var(--panel))
+    rgb(8 20 30 / calc(0.55 * var(--panel)));
+  overflow: hidden;
   transition: border-color 120ms, box-shadow 120ms;
 }
 .bin.is-inbox {
-  --bin-tint: var(--water);
+  --bin-tint: color-mix(in oklab, var(--contour) calc(4% + 14% * var(--panel)), var(--water));
+  --bin-band: color-mix(in oklab, var(--contour) calc(8% + 22% * var(--panel)), var(--water));
   border-style: dashed;
   border-color: var(--contour);
 }
@@ -34,23 +41,27 @@
 .bin-head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+  background: var(--bin-band);
+  /* Double-click folds the panel; don't select the name while doing it. */
+  user-select: none;
+}
+.bin:not(.is-collapsed) .bin-head {
+  margin-bottom: 0.5rem;
 }
 .bin-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
   min-height: 44px;
-  padding: 0 0.5rem;
   border: 0;
   border-radius: 10px;
   background: none;
-  text-align: left;
 }
 .bin-toggle:hover {
-  background: color-mix(in oklab, var(--bin) 12%, transparent);
+  background: color-mix(in oklab, var(--bin) 18%, transparent);
 }
 .bin-chevron {
   flex: none;
@@ -64,11 +75,19 @@
 .bin.is-collapsed .bin-chevron {
   transform: rotate(-45deg);
 }
+.bin-icon {
+  flex: none;
+  font-size: 1.35rem;
+  line-height: 1;
+}
 .bin-name {
-  font-family: var(--font-chart);
-  font-style: italic;
-  font-weight: 500;
-  font-size: var(--step-2);
+  min-width: 0;
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 800;
+  font-variation-settings: 'SOFT' 100;
+  font-size: var(--step-1);
+  letter-spacing: -0.01em;
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;

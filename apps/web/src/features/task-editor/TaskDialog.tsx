@@ -218,6 +218,8 @@ export function TaskDialog({ target, queued, onClose }: Props) {
     >
       <form
         className="editor-form"
+        // Not a form Chrome should fill: no password, card or address bar above the keyboard.
+        autoComplete="off"
         onSubmit={submit}
         onKeyDown={(e) => {
           // Enter already submits from inputs; Ctrl/Cmd+Enter adds that for the notes textarea.
@@ -308,6 +310,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
                 <div className="inline-new">
                   <input
                     id={ids.project}
+                    autoComplete="off"
                     autoFocus
                     placeholder="Project name"
                     value={newProjectName}
@@ -386,6 +389,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
               </label>
               <input
                 id={ids.estimate}
+                autoComplete="off"
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -417,6 +421,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
                     />
                     <input
                       id={`sub-${s.key}`}
+                      autoComplete="off"
                       className={s.done ? 'is-done' : undefined}
                       value={s.title}
                       placeholder="Subtask"
@@ -452,6 +457,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
           <label htmlFor={ids.notes}>Notes</label>
           <textarea
             id={ids.notes}
+            autoComplete="off"
             rows={3}
             value={draft.notes}
             onChange={(e) => set('notes', e.target.value)}

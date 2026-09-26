@@ -295,3 +295,16 @@ describe('events', () => {
     expect(published.length).toBe(before);
   });
 });
+
+describe('project icons', () => {
+  it('stores an emoji, and null lets the app choose', () => {
+    const { services } = setup();
+    const plain = services.projects.create(o, { name: 'Work' });
+    expect(plain.icon).toBeNull();
+    const garden = services.projects.create(o, { name: 'Garden', icon: '🌱' });
+    expect(garden.icon).toBe('🌱');
+    expect(services.projects.update(o, garden.id, { icon: '🏡' }).icon).toBe('🏡');
+    expect(services.projects.update(o, garden.id, { icon: null }).icon).toBeNull();
+    expect(() => services.projects.update(o, garden.id, { icon: 'a'.repeat(17) })).toThrow();
+  });
+});

@@ -277,6 +277,7 @@ function ChatTab() {
 
       <form
         className="chat-compose"
+        autoComplete="off"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -287,6 +288,7 @@ function ChatTab() {
         </label>
         <textarea
           id={inputId}
+          autoComplete="off"
           ref={inputRef}
           rows={1}
           value={draft}
