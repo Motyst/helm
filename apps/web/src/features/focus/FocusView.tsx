@@ -43,7 +43,7 @@ export function FocusView() {
   const queueMinutes = queue.reduce((sum, t) => sum + (t.estimateMinutes ?? 0), 0);
 
   return (
-    <main className="focus">
+    <main className={`focus ${current ? 'is-working' : ''}`}>
       <section className="focus-hero" aria-label={current ? 'In progress' : 'Nothing in progress'}>
         {current ? (
           <CurrentTask
@@ -57,14 +57,14 @@ export function FocusView() {
           />
         ) : upNext ? (
           <div className="hero-idle">
-            <p className="hero-note">Nothing in progress. Next up:</p>
-            <h1 className="hero-title hero-title-idle">{upNext.title}</h1>
+            <p className="hero-status">Nothing in progress. Next up:</p>
+            <h1 className="hero-title">{upNext.title}</h1>
             <div className="hero-meta">
               <ProjectLabel projectId={upNext.projectId} projects={projectMap} />
               {upNext.estimateMinutes && <span>{formatMinutes(upNext.estimateMinutes)}</span>}
               {upNext.progress && (
                 <span>
-                  {upNext.progress.done}/{upNext.progress.total} subtasks
+                  {upNext.progress.done} of {upNext.progress.total} subtasks done
                 </span>
               )}
             </div>
@@ -79,8 +79,8 @@ export function FocusView() {
           </div>
         ) : (
           <div className="hero-idle">
-            <h1 className="hero-title hero-title-idle">Nothing on Now or Soon.</h1>
-            <p className="hero-note">Tasks you add, or that an agent adds, show up here.</p>
+            <h1 className="hero-title hero-title-empty">Nothing on Now or Soon.</h1>
+            <p className="hero-status">Tasks you add, or that an agent adds, show up here.</p>
             <div className="hero-actions">
               <button className="btn btn-primary" onClick={() => editor.openCreate({ priority: 'now' })}>
                 Add a task
@@ -90,7 +90,7 @@ export function FocusView() {
         )}
       </section>
 
-      <section className="focus-queue">
+      <aside className="focus-queue" aria-label="Coming up">
         {current && upNext && (
           <div className="queue-block">
             <h2 className="queue-heading">Up next</h2>
@@ -113,7 +113,7 @@ export function FocusView() {
 
         <div className="queue-block">
           <h2 className="queue-heading">
-            Now
+            {current || upNext ? 'Also on Now' : 'Now'}
             {queue.length > 0 && (
               <span className="queue-sum">
                 {queue.length} {queue.length === 1 ? 'task' : 'tasks'}
@@ -133,7 +133,7 @@ export function FocusView() {
             <p className="queue-empty">Nothing else on Now.</p>
           )}
         </div>
-      </section>
+      </aside>
     </main>
   );
 }
@@ -159,47 +159,65 @@ function CurrentTask({
   const startedAt = (active ?? task).startedAt;
   const elapsed = startedAt ? minutesSince(startedAt, now) : 0;
   const estimate = task.estimateMinutes;
+  const over = estimate !== null && elapsed > estimate;
   const workingId = active?.id ?? task.id;
 
   return (
     <div className="hero-current">
-      <h1 className="hero-title">{task.title}</h1>
-      {startedAt && <CourseLine elapsed={elapsed} estimate={estimate} />}
-      <div className="hero-meta">
-        <ProjectLabel projectId={task.projectId} projects={projects} />
-        {startedAt && <span>Started {clockTime(startedAt)}</span>}
-        <span className={estimate && elapsed > estimate ? 'over' : undefined}>
-          {estimate ? `${formatMinutes(elapsed)} of ${formatMinutes(estimate)}` : `${formatMinutes(elapsed)} in`}
+      <p className="hero-status">
+        <span className="status-text">
+          <span className="status-dot" aria-hidden="true" />
+          {startedAt ? `In progress since ${clockTime(startedAt)}` : 'In progress'}
         </span>
-        {task.progress && (
-          <span>
-            {task.progress.done}/{task.progress.total} subtasks
-          </span>
+        <ProjectLabel projectId={task.projectId} projects={projects} />
+      </p>
+      <h1 className="hero-title">{task.title}</h1>
+
+      <div className="hero-clock">
+        <p className="clock-elapsed">
+          <strong>{formatMinutes(elapsed)}</strong>
+          <span>{estimate ? `of ${formatMinutes(estimate)}` : 'so far'}</span>
+        </p>
+        {estimate && (
+          <p className={`clock-left ${over ? 'over' : ''}`}>
+            {over ? `${formatMinutes(elapsed - estimate)} over` : `${formatMinutes(estimate - elapsed)} left`}
+          </p>
         )}
       </div>
+      {startedAt && <CourseLine elapsed={elapsed} estimate={estimate} />}
 
       {task.subtasks.length > 0 && (
-        <ul className="subtasks">
-          {task.subtasks.map((s) => (
-            <li key={s.id} className={s.id === activeSubtaskId ? 'is-active' : undefined}>
-              <button
-                className={`check ${s.status === 'done' ? 'is-done' : ''}`}
-                aria-pressed={s.status === 'done'}
-                onClick={() => onAction(s.id, s.status === 'done' ? 'reopen' : 'complete')}
-              >
-                <span className="check-box" aria-hidden="true" />
-                <span className="check-label">{s.title}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <section className="hero-steps" aria-labelledby="steps-heading">
+          <h2 id="steps-heading" className="steps-heading">
+            Subtasks
+            {task.progress && (
+              <span className="queue-sum">
+                {task.progress.done} of {task.progress.total} done
+              </span>
+            )}
+          </h2>
+          <ul className="subtasks">
+            {task.subtasks.map((s) => (
+              <li key={s.id} className={s.id === activeSubtaskId ? 'is-active' : undefined}>
+                <button
+                  className={`check ${s.status === 'done' ? 'is-done' : ''}`}
+                  aria-pressed={s.status === 'done'}
+                  onClick={() => onAction(s.id, s.status === 'done' ? 'reopen' : 'complete')}
+                >
+                  <span className="check-box" aria-hidden="true" />
+                  <span className="check-label">{s.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="hero-actions">
         <button className="btn btn-primary" onClick={onComplete}>
           Mark done
         </button>
-        <button className="btn btn-quiet" onClick={() => onAction(workingId, 'stop')}>
+        <button className="btn" onClick={() => onAction(workingId, 'stop')}>
           Pause
         </button>
         <button className="btn btn-quiet" onClick={onEdit}>
@@ -240,7 +258,7 @@ function QueueRow({
           )}
         </span>
       </div>
-      <button className="btn btn-quiet queue-start" onClick={onStart} aria-label={`Start ${task.title}`}>
+      <button className={`btn queue-start ${large ? '' : 'btn-quiet'}`} onClick={onStart} aria-label={`Start ${task.title}`}>
         Start
       </button>
     </div>
