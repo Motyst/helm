@@ -13,7 +13,7 @@ const MAX_REPLAY = 500;
 const PING_MS = 25_000;
 
 function visibleTo(p: Principal, e: HelmEvent): boolean {
-  if (e.entity === 'token') return p.kind === 'owner';
+  if (e.entity === 'token' || e.entity === 'timer') return p.kind === 'owner';
   const projectId = e.entity === 'task' ? (e.data as Task).projectId : e.entityId;
   return canRead(p, projectId);
 }

@@ -322,9 +322,50 @@ export type ChatStreamEvent =
   | { type: 'error'; message: string }
   | { type: 'done' };
 
+// ---------- Timer ----------
+
+export const TIMER_STATUSES = ['running', 'paused', 'finished'] as const;
+export type TimerStatus = (typeof TIMER_STATUSES)[number];
+
+/** A countdown. Only the live one is ever sent; `ended` means it was stopped or dismissed. */
+export interface Timer {
+  id: string;
+  label: string | null;
+  taskId: string | null;
+  durationMs: number;
+  status: TimerStatus;
+  /** When it rings (running) or rang (finished); null while paused. */
+  endsAt: string | null;
+  /** Time left while paused. */
+  remainingMs: number | null;
+  ended: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const StartTimerInput = z
+  .object({
+    minutes: z.number().positive().max(24 * 60),
+    label: z.string().trim().max(200).nullable().optional(),
+    taskId: Id.nullable().optional(),
+  })
+  .strict();
+export type StartTimerInput = z.input<typeof StartTimerInput>;
+
+export const ExtendTimerInput = z.object({ minutes: z.number().positive().max(24 * 60) }).strict();
+export type ExtendTimerInput = z.input<typeof ExtendTimerInput>;
+
+export const PushSubscriptionInput = z
+  .object({
+    endpoint: z.url().max(2000),
+    keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
+  })
+  .loose();
+export type PushSubscriptionInput = z.input<typeof PushSubscriptionInput>;
+
 // ---------- Realtime ----------
 
-export const EVENT_ENTITIES = ['task', 'project', 'token'] as const;
+export const EVENT_ENTITIES = ['task', 'project', 'token', 'timer'] as const;
 export type EventEntity = (typeof EVENT_ENTITIES)[number];
 
 export interface HelmEvent {
@@ -337,7 +378,7 @@ export interface HelmEvent {
   /** created | updated | moved | started | stopped | completed | reopened | deleted | archived */
   action: string;
   /** Full snapshot of the entity after the change. Token events reach the owner only. */
-  data: Task | Project | ApiToken;
+  data: Task | Project | ApiToken | Timer;
 }
 
 // ---------- Defaults ----------

@@ -5,6 +5,7 @@ import { useProjects, useTaskAction, useTasks } from '../../lib/queries.ts';
 import { useCompleteTask } from '../../lib/useCompleteTask.ts';
 import { ProjectLabel, type ProjectMap } from '../../ui/ProjectLabel.tsx';
 import { useEditor } from '../task-editor/EditorContext.tsx';
+import { TimerCard } from '../timer/TimerCard.tsx';
 import { CourseLine } from './CourseLine.tsx';
 import './focus.css';
 
@@ -90,7 +91,9 @@ export function FocusView() {
         )}
       </section>
 
-      <aside className="focus-queue" aria-label="Coming up">
+      <aside className="focus-queue" aria-label="Timer and what comes next">
+        <TimerCard label={current?.title ?? null} taskId={current?.id ?? null} />
+
         {current && upNext && (
           <div className="queue-block">
             <h2 className="queue-heading">Up next</h2>

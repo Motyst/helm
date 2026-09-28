@@ -42,6 +42,8 @@ export default defineConfig({
         // Needed for autoUpdate: the new worker takes over at once and the page reloads onto it.
         skipWaiting: true,
         clientsClaim: true,
+        // Shows timer alerts that arrive by Web Push (public/push-handler.js).
+        importScripts: ['push-handler.js'],
       },
     }),
   ],

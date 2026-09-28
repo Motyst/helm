@@ -68,7 +68,7 @@ export const events = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     at: ts('at').notNull(),
     actor: text('actor').notNull(),
-    entity: text('entity', { enum: ['task', 'project', 'token'] }).notNull(),
+    entity: text('entity', { enum: ['task', 'project', 'token', 'timer'] }).notNull(),
     entityId: text('entity_id').notNull(),
     /** Project the entity belongs to (for scope-filtering the stream); null = Inbox / not applicable. */
     projectId: text('project_id'),
@@ -78,7 +78,45 @@ export const events = sqliteTable(
   (t) => [index('events_entity_idx').on(t.entity, t.entityId)],
 );
 
+/**
+ * Countdown timers. At most one is live (running, paused, or finished and not yet dismissed);
+ * starting a new one ends the old one.
+ */
+export const timers = sqliteTable('timers', {
+  id: text('id').primaryKey(),
+  label: text('label'),
+  /** The task it was started for, if any. Not a foreign key: a timer outlives its task. */
+  taskId: text('task_id'),
+  durationMs: integer('duration_ms').notNull(),
+  /** When it rings; null while paused. */
+  endsAt: ts('ends_at'),
+  /** Time left while paused; null while running. */
+  remainingMs: integer('remaining_ms'),
+  finishedAt: ts('finished_at'),
+  /** Stopped or dismissed: no longer shown. */
+  endedAt: ts('ended_at'),
+  createdAt: ts('created_at').notNull(),
+  updatedAt: ts('updated_at').notNull(),
+});
+
+/** Web Push subscriptions: one per browser or installed app that turned on timer alerts. */
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+  id: text('id').primaryKey(),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: ts('created_at').notNull(),
+});
+
+/** Small server settings that must survive restarts (e.g. the Web Push key pair). */
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
 export type ProjectRow = typeof projects.$inferSelect;
 export type TaskRow = typeof tasks.$inferSelect;
 export type ApiTokenRow = typeof apiTokens.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
+export type TimerRow = typeof timers.$inferSelect;
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;

@@ -1,0 +1,182 @@
+/* ----- Timer card (Focus side panel) ----- */
+
+.timer-for {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timer-clock {
+  font-size: var(--step-3);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.timer-clock.is-paused {
+  color: var(--ink-soft);
+}
+.timer-clock.is-due {
+  color: var(--accent);
+}
+.timer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.timer-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.25rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.timer-presets .btn {
+  justify-content: center;
+  padding-inline: 0.5em;
+}
+.timer-actions .btn {
+  padding-inline: 0.9em;
+}
+.timer-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.timer-input {
+  font: inherit;
+  width: 5.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--contour-faint);
+  background: var(--shallows);
+  color: var(--ink);
+}
+.timer-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.timer-hint {
+  margin-top: 0.6rem;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+.timer-link {
+  padding: 0.35rem 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--contour);
+  text-underline-offset: 3px;
+}
+.timer-link:hover {
+  text-decoration-color: var(--accent);
+}
+.timer-error {
+  color: var(--accent);
+}
+
+/* ----- Top bar chip ----- */
+
+.timer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.75rem 0 0.6rem;
+  border-radius: 999px;
+  background: var(--shallows);
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.timer-chip svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.timer-chip.is-paused {
+  color: var(--ink-soft);
+}
+.timer-chip.is-due {
+  background: var(--accent);
+  color: var(--water);
+}
+
+/* ----- Time's up banner: on every view until dismissed ----- */
+
+.timeup {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  top: max(0.75rem, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  width: min(34rem, calc(100vw - 2rem));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1rem 0.85rem 1.25rem;
+  border-radius: var(--radius-panel);
+  background: var(--water);
+  border: 2px solid var(--accent);
+  box-shadow: 0 14px 40px -12px rgb(8 20 30 / 0.5);
+  animation: timeup-in 240ms ease-out;
+}
+.timeup-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.timeup-text strong {
+  font-size: var(--step-1);
+  color: var(--accent);
+}
+.timeup-text span {
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.timeup-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+@keyframes timeup-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.75rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timeup {
+    animation: none;
+  }
+}
+
+/* Phones: the top bar has no room, so the chip floats bottom left, across from the mic button. */
+@media (max-width: 520px) {
+  .timer-chip {
+    position: fixed;
+    z-index: 20;
+    left: 1rem;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    min-height: 3.25rem;
+    padding: 0 1.1rem 0 0.9rem;
+    font-size: var(--step-1);
+    border: 1.5px solid var(--contour-faint);
+    box-shadow: 0 10px 28px -12px rgb(8 20 30 / 0.55);
+  }
+  .timer-chip svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}

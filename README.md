@@ -28,7 +28,12 @@ assistant (`ai:<name>`).
 
 The view to leave open. The task in progress sits at the top in large type, with its subtasks
 and a timeline of time spent against the estimate (it turns to the accent color when you run
-over). Below it: what's up next, then the rest of Now and Soon, each with a Start button.
+over). Beside it: a countdown timer, what's up next, and the rest of Now, each with a Start button.
+
+The timer runs on the server, so every device shows the same countdown. When it ends, Helm
+chimes and shows a banner on any open device, and sends a notification to each device where
+you turned on alerts (Settings → Timer alerts), even with Helm closed or the phone locked. That
+uses Web Push: it needs the HTTPS address, and on iPhone the app added to the home screen.
 
 ### Board, Done and your phone
 

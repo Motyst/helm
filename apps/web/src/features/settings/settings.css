@@ -308,3 +308,9 @@
   min-height: 44px;
   accent-color: var(--ink);
 }
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

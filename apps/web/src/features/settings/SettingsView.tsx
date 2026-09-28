@@ -6,6 +6,7 @@ import { relativeTime } from '../../lib/format.ts';
 import { clearUserData, keys, useCreateToken, useProjects, useRevokeToken, useTokens } from '../../lib/queries.ts';
 import '../task-editor/editor.css';
 import './settings.css';
+import { AlertsSection } from './AlertsSection.tsx';
 import { ThemeSection } from './ThemePicker.tsx';
 
 const ACCESS: { value: TokenScope; label: string; hint: string }[] = [
@@ -43,6 +44,8 @@ export function SettingsView() {
       <TokenList />
 
       <ThemeSection />
+
+      <AlertsSection />
 
       <SessionSection />
     </main>

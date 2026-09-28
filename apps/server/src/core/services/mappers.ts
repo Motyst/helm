@@ -1,5 +1,5 @@
-import type { ApiTokenRow, ProjectRow, TaskRow } from '@helm/db';
-import type { ApiToken, Project, Task } from '@helm/shared';
+import type { ApiTokenRow, ProjectRow, TaskRow, TimerRow } from '@helm/db';
+import type { ApiToken, Project, Task, Timer } from '@helm/shared';
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
@@ -48,5 +48,20 @@ export function toApiToken(r: ApiTokenRow): ApiToken {
     lastUsedAt: iso(r.lastUsedAt),
     expiresAt: iso(r.expiresAt),
     revokedAt: iso(r.revokedAt),
+  };
+}
+
+export function toTimer(r: TimerRow): Timer {
+  return {
+    id: r.id,
+    label: r.label,
+    taskId: r.taskId,
+    durationMs: r.durationMs,
+    status: r.finishedAt ? 'finished' : r.endsAt ? 'running' : 'paused',
+    endsAt: iso(r.finishedAt ?? r.endsAt),
+    remainingMs: r.finishedAt ? null : r.remainingMs,
+    ended: r.endedAt !== null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
   };
 }

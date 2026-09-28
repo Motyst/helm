@@ -7,6 +7,8 @@ import { DoneView } from '../features/done/DoneView.tsx';
 import { FocusView } from '../features/focus/FocusView.tsx';
 import { SettingsView } from '../features/settings/SettingsView.tsx';
 import { EditorProvider, useEditor } from '../features/task-editor/EditorContext.tsx';
+import { TimerChip } from '../features/timer/TimerCard.tsx';
+import { TimerProvider } from '../features/timer/TimerContext.tsx';
 import { MicIcon, VoiceCapture } from '../features/voice/VoiceCapture.tsx';
 import { api, ApiError } from '../lib/api.ts';
 import { clearUserData, keys } from '../lib/queries.ts';
@@ -58,7 +60,9 @@ export function App() {
     <ToastProvider>
       <EditorProvider>
         <AssistantProvider>
-          <Shell sync={sync} />
+          <TimerProvider>
+            <Shell sync={sync} />
+          </TimerProvider>
         </AssistantProvider>
       </EditorProvider>
     </ToastProvider>
@@ -140,6 +144,7 @@ function Shell({ sync }: { sync: SyncState }) {
           ))}
         </nav>
         <div className="topbar-end">
+          {route !== 'focus' && <TimerChip />}
           <span className={`sync sync-${sync}`} role="status">
             {SYNC_LABEL[sync]}
           </span>

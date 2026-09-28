@@ -15,6 +15,13 @@
       "when": 1790376536559,
       "tag": "0001_short_golden_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790627942338,
+      "tag": "0002_wealthy_kate_bishop",
+      "breakpoints": true
     }
   ]
 }

@@ -1,12 +1,16 @@
 import type { ServiceContext } from './context.ts';
 import { ProjectService } from './project.service.ts';
+import { PushService } from './push.service.ts';
 import { TaskService } from './task.service.ts';
+import { TimerService } from './timer.service.ts';
 import { TokenService } from './token.service.ts';
 
 export interface Services {
   tasks: TaskService;
   projects: ProjectService;
   tokens: TokenService;
+  timers: TimerService;
+  push: PushService;
 }
 
 export function createServices(ctx: ServiceContext): Services {
@@ -14,8 +18,10 @@ export function createServices(ctx: ServiceContext): Services {
     tasks: new TaskService(ctx),
     projects: new ProjectService(ctx),
     tokens: new TokenService(ctx),
+    timers: new TimerService(ctx),
+    push: new PushService(ctx),
   };
 }
 
 export type { ServiceContext } from './context.ts';
-export { TaskService, ProjectService, TokenService };
+export { TaskService, ProjectService, TokenService, TimerService, PushService };

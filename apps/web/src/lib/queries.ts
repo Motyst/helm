@@ -6,7 +6,16 @@ import {
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { ApiToken, DoneLogPage, MoveProjectInput, MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
+import type {
+  ApiToken,
+  DoneLogPage,
+  MoveProjectInput,
+  MoveTaskInput,
+  Project,
+  Task,
+  Timer,
+  UpdateProjectInput,
+} from '@helm/shared';
 import { api, type DoneQuery, type TaskAction } from './api.ts';
 
 export const keys = {
@@ -17,6 +26,7 @@ export const keys = {
   tokens: ['tokens'] as const,
   voice: ['voice'] as const,
   assistant: ['assistant'] as const,
+  timer: ['timer'] as const,
 };
 
 /** Queries kept on the device so the app opens with the last snapshot, even offline. */
@@ -24,7 +34,7 @@ export const PERSISTED_KEYS: readonly string[] = [keys.me[0], keys.tasks[0], key
 
 /** Signed out or session expired: drop everything cached about the board (and its persisted copy). */
 export function clearUserData(qc: QueryClient) {
-  for (const key of [keys.tasks, keys.projects, keys.done, keys.tokens]) qc.removeQueries({ queryKey: key });
+  for (const key of [keys.tasks, keys.projects, keys.done, keys.tokens, keys.timer]) qc.removeQueries({ queryKey: key });
 }
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
@@ -202,4 +212,23 @@ export function useDeleteProject() {
     mutationFn: api.deleteProject,
     onSuccess: (p) => removeProject(qc, p.id),
   });
+}
+
+// ---------- Timer ----------
+
+/** The live countdown, or null. Live events keep it current on every device. */
+export const useTimer = () => useQuery({ queryKey: keys.timer, queryFn: api.timer });
+
+/** Apply a timer snapshot unless the cache already has a newer one. Ended timers clear it. */
+export function setTimer(qc: QueryClient, timer: Timer) {
+  qc.setQueryData<Timer | null>(keys.timer, (cur) => {
+    if (cur && cur.id === timer.id && cur.updatedAt > timer.updatedAt) return cur;
+    if (timer.ended) return cur && cur.id !== timer.id ? cur : null;
+    return timer;
+  });
+}
+
+export function useTimerAction<A>(fn: (arg: A) => Promise<Timer>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: (t) => setTimer(qc, t) });
 }
