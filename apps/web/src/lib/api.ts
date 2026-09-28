@@ -10,6 +10,7 @@ import type {
   CreateTokenInput,
   CreateTaskInput,
   DoneLogPage,
+  MoveProjectInput,
   MoveTaskInput,
   Project,
   Task,
@@ -127,7 +128,9 @@ export const api = {
   projects: () => request<Project[]>('GET', '/projects?includeArchived=true'),
   createProject: (input: CreateProjectInput) => request<Project>('POST', '/projects', input),
   updateProject: (id: string, patch: UpdateProjectInput) => request<Project>('PATCH', `/projects/${id}`, patch),
+  moveProject: (id: string, input: MoveProjectInput) => request<Project>('POST', `/projects/${id}/move`, input),
   archiveProject: (id: string) => request<Project>('DELETE', `/projects/${id}`),
+  deleteProject: (id: string) => request<Project>('DELETE', `/projects/${id}?permanent=true`),
 
   tokens: () => request<ApiToken[]>('GET', '/tokens'),
   createToken: (input: CreateTokenInput) => request<CreatedToken>('POST', '/tokens', input),

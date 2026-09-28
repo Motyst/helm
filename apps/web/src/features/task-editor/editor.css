@@ -352,6 +352,14 @@
 .editor-small {
   width: min(26rem, calc(100vw - 2rem));
 }
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.field-warning {
+  color: var(--accent);
+}
 .swatches {
   display: flex;
   flex-wrap: wrap;

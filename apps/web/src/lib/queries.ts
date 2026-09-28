@@ -6,7 +6,7 @@ import {
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { ApiToken, DoneLogPage, MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
+import type { ApiToken, DoneLogPage, MoveProjectInput, MoveTaskInput, Project, Task, UpdateProjectInput } from '@helm/shared';
 import { api, type DoneQuery, type TaskAction } from './api.ts';
 
 export const keys = {
@@ -28,7 +28,10 @@ export function clearUserData(qc: QueryClient) {
 }
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
-const liveProjects = (ps: Project[]) => ps.filter((p) => !p.archivedAt);
+/** Board order. Live events and moves update the cache in place, so sort here rather than trust list order. */
+const byPosition = (a: Project, b: Project) =>
+  a.position < b.position ? -1 : a.position > b.position ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+const liveProjects = (ps: Project[]) => ps.filter((p) => !p.archivedAt).sort(byPosition);
 /** Active projects. Archived ones stay in the cache (live events upsert them) but are filtered out here. */
 export const useProjects = () => useQuery({ queryKey: keys.projects, queryFn: api.projects, select: liveProjects });
 /** Including archived projects (for labelling old tasks). */
@@ -85,6 +88,13 @@ export function upsertTask(qc: QueryClient, task: Task) {
 
 export function upsertProject(qc: QueryClient, project: Project) {
   upsert(qc, keys.projects, project);
+}
+
+/** A project deleted for good: drop it, and refetch tasks (its tasks were deleted with it). */
+export function removeProject(qc: QueryClient, id: string) {
+  qc.setQueryData<Project[]>(keys.projects, (list) => list?.filter((p) => p.id !== id));
+  void qc.invalidateQueries({ queryKey: keys.tasks });
+  void qc.invalidateQueries({ queryKey: keys.done });
 }
 
 /** "Last used" changes without a live event, so refresh while the list is on screen. */
@@ -175,5 +185,21 @@ export function useArchiveProject() {
       // Its tasks leave the board; refetch rather than patch each one.
       void qc.invalidateQueries({ queryKey: keys.tasks });
     },
+  });
+}
+
+export function useMoveProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: MoveProjectInput }) => api.moveProject(id, input),
+    onSuccess: (p) => upsertProject(qc, p),
+  });
+}
+
+export function useDeleteProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteProject,
+    onSuccess: (p) => removeProject(qc, p.id),
   });
 }

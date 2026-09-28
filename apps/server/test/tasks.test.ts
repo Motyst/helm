@@ -249,6 +249,26 @@ describe('reads', () => {
     expect(services.projects.list(o)).toEqual([]);
     expect(services.projects.list(o, { includeArchived: 'true' }).map((p) => p.name)).toEqual(['Work']);
   });
+
+  it('deleting a project deletes its tasks, open and done', () => {
+    const { services } = setup();
+    const work = services.projects.create(o, { name: 'Work' });
+    const home = services.projects.create(o, { name: 'Home' });
+    const parent = services.tasks.create(o, { title: 'A', projectId: work.id });
+    services.tasks.create(o, { title: 'A1', parentTaskId: parent.id });
+    const done = services.tasks.create(o, { title: 'B', projectId: work.id });
+    services.tasks.complete(o, done.id);
+    services.tasks.create(o, { title: 'C', projectId: home.id });
+
+    services.projects.remove(o, work.id);
+    expect(services.projects.list(o, { includeArchived: 'true' }).map((p) => p.name)).toEqual(['Home']);
+    expect(services.tasks.board(o).map((t) => t.title)).toEqual(['C']);
+    expect(services.tasks.doneLog(o, { includeSubtasks: 'true' }).tasks).toEqual([]);
+    expect(errCode(() => services.projects.remove(o, work.id))).toBe('not_found');
+    expect(errCode(() => services.projects.remove(token({ scope: 'read_write', projectIds: [home.id] }), home.id))).toBe(
+      'forbidden',
+    );
+  });
 });
 
 describe('token scopes', () => {

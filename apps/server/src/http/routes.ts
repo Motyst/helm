@@ -31,7 +31,14 @@ export function apiRoutes(s: Services): Hono<AppEnv> {
   r.post('/projects/:id/move', async (c) =>
     c.json(s.projects.move(c.var.principal, c.req.param('id'), await jsonBody(c))),
   );
-  r.delete('/projects/:id', (c) => c.json(s.projects.archive(c.var.principal, c.req.param('id'))));
+  // DELETE archives (kept for existing clients); ?permanent=true deletes the project and its tasks.
+  r.delete('/projects/:id', (c) =>
+    c.json(
+      c.req.query('permanent') === 'true'
+        ? s.projects.remove(c.var.principal, c.req.param('id'))
+        : s.projects.archive(c.var.principal, c.req.param('id')),
+    ),
+  );
 
   // ----- API tokens (owner only) -----
   r.get('/tokens', (c) => c.json(s.tokens.list(c.var.principal)));
