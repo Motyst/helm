@@ -1,5 +1,6 @@
-// Generates the PWA icons in public/ from one drawing: a magenta course line with one course
-// change, ending at a position fix (circle and dot, as plotted on a chart).
+// Generates the PWA icons in public/ from one drawing: a ship's helm that doubles as a network.
+// The spokes meet the rim at nodes and run into a magenta hub (the brain steering it all), and
+// the top handle, also magenta, marks the heading.
 // Run with `pnpm --filter @helm/web icons` after changing the drawing; the PNGs are committed.
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -9,21 +10,57 @@ import { Resvg } from '@resvg/resvg-js';
 const out = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
 const NAVY = '#18293a';
+const DEEP = '#0f1c27';
 const FOG = '#d5e1e7';
 const MAGENTA = '#e26aa3';
+
+const C = 256;
+const RIM = 124;
+
+/** The point `r` from the centre at compass bearing `deg` (0 is straight up). */
+function at(r, deg) {
+  const a = ((deg - 90) * Math.PI) / 180;
+  return [+(C + r * Math.cos(a)).toFixed(1), +(C + r * Math.sin(a)).toFixed(1)];
+}
+
+function line(r1, r2, deg, attrs) {
+  const [x1, y1] = at(r1, deg);
+  const [x2, y2] = at(r2, deg);
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-linecap="round" ${attrs}/>`;
+}
 
 /**
  * Drawn on a 512 grid. Everything important stays inside the maskable safe zone
  * (a circle of radius 205 around the centre), so one drawing serves every shape.
  */
-function drawing({ radius }) {
+function drawing({ radius, scale = 1 }) {
+  let handles = '';
+  let spokes = '';
+  let nodes = '';
+  for (let i = 0; i < 8; i++) {
+    const deg = i * 45;
+    const color = i === 0 ? MAGENTA : FOG;
+    handles += line(146, 188, deg, `stroke="${color}" stroke-width="26"`);
+    spokes += line(44, RIM, deg, `stroke="${color}" stroke-width="${i === 0 ? 12 : 10}"`);
+    const [x, y] = at(RIM, deg);
+    nodes += `<circle cx="${x}" cy="${y}" r="17" fill="${NAVY}" stroke="${color}" stroke-width="10"/>`;
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="${radius}" fill="${NAVY}"/>
-  <path d="M124 388 L214 236 L290 204" fill="none" stroke="${MAGENTA}" stroke-width="30"
-    stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="214" cy="236" r="15" fill="${FOG}"/>
-  <circle cx="356" cy="176" r="58" fill="none" stroke="${FOG}" stroke-width="22"/>
-  <circle cx="356" cy="176" r="18" fill="${FOG}"/>
+  <defs>
+    <radialGradient id="sea" cx="50%" cy="40%" r="70%">
+      <stop offset="0" stop-color="${NAVY}"/>
+      <stop offset="1" stop-color="${DEEP}"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="${radius}" fill="url(#sea)"/>
+  <g transform="translate(${C} ${C}) scale(${scale}) translate(${-C} ${-C})">
+  ${handles}
+  <circle cx="${C}" cy="${C}" r="${RIM}" fill="none" stroke="${FOG}" stroke-width="20"/>
+  ${spokes}
+  ${nodes}
+  <circle cx="${C}" cy="${C}" r="42" fill="${MAGENTA}"/>
+  <circle cx="${C}" cy="${C}" r="13" fill="${NAVY}"/>
+  </g>
 </svg>
 `;
 }
@@ -34,7 +71,8 @@ function png(svg, size, file) {
 }
 
 const rounded = drawing({ radius: 112 });
-const square = drawing({ radius: 0 });
+// Launchers crop these to a circle or squircle, so the helm sits smaller to keep clear of the edge.
+const square = drawing({ radius: 0, scale: 0.84 });
 
 writeFileSync(join(out, 'favicon.svg'), rounded);
 png(rounded, 192, 'icon-192.png');
