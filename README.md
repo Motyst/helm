@@ -1,4 +1,4 @@
-# Helm
+# <img src="apps/web/public/icon-192.png" width="40" alt=""> Helm
 
 Personal live task board, readable by you and by AI agents.
 
@@ -26,20 +26,35 @@ assistant (`ai:<name>`).
 
 ![Focus on a desktop: the task in progress, its subtasks and what's next](docs/screenshots/desktop-focus.png)
 
-The view to leave open. The task in progress sits at the top in large type, with its subtasks
-and a timeline of time spent against the estimate (it turns to the accent color when you run
-over). Beside it: a countdown timer, what's up next, and the rest of Now, each with a Start button.
+The view to leave open. The task in progress sits at the top in large type, under when you
+started it and its project. Below it: time spent as a large readout with the time left (or
+over) beside it, a course line against the estimate that turns to the accent color when you run
+over, and the subtasks in their own panel. Beside it on a wide screen (below it on a phone): a
+countdown timer, what's up next, and the rest of Now, each with a Start button.
+
+### Timer
+
+<p>
+  <img src="docs/screenshots/phone-focus-queue.png" width="250" alt="The timer, up next and the rest of Now on a phone">
+  <img src="docs/screenshots/phone-timeup.png" width="250" alt="The time's up banner when a timer ends">
+  <img src="docs/screenshots/phone-settings-alerts.png" width="250" alt="Timer alerts in Settings, turned on per device">
+</p>
+
+Start one from Focus: 5, 15, 25 or 45 minutes, or any length, labelled with the task in
+progress. Pause, resume, add 5 minutes or stop it. On the other views a chip in the top bar (a
+floating pill on a phone) keeps the countdown in sight.
 
 The timer runs on the server, so every device shows the same countdown. When it ends, Helm
-chimes and shows a banner on any open device, and sends a notification to each device where
-you turned on alerts (Settings → Timer alerts), even with Helm closed or the phone locked. That
-uses Web Push: it needs the HTTPS address, and on iPhone the app added to the home screen.
+chimes, vibrates and shows a banner on any open device, and sends a notification to each device
+where you turned on alerts (Settings → Timer alerts), even with Helm closed or the phone locked.
+That uses Web Push: it needs the HTTPS address, and on iPhone the app added to the home screen.
+The push keys are made on first start and kept in the database, so there's nothing to set up.
 
 ### Board, Done and your phone
 
 <p>
-  <img src="docs/screenshots/phone-focus.png" width="250" alt="Focus on a phone">
   <img src="docs/screenshots/phone-board.png" width="250" alt="Board on a phone, one bin per project">
+  <img src="docs/screenshots/phone-board-menu.png" width="250" alt="A project's menu: color, icon, place on the board, archive or delete">
   <img src="docs/screenshots/phone-done.png" width="250" alt="Done log on a phone, grouped by day">
 </p>
 
@@ -47,6 +62,10 @@ uses Web Push: it needs the HTTPS address, and on iPhone the app added to the ho
   tasks grouped by priority inside it. Drag a task to another panel or priority, reorder within
   one, and double-click a panel to fold it. Settings → Board panels sets how strongly the panels
   stand out from the page.
+- **A project's menu** (⋯ on its panel): rename it, pick its color and icon, move it earlier or
+  later on the board (the Inbox always comes first), archive it, or delete it. Archiving hides
+  the project and keeps its tasks; deleting asks first, then removes the project and all its
+  tasks, open and done, for good.
 - **Done**: what you finished, grouped by day with a time for each, filtered by date range or
   project. Reopen anything finished by mistake.
 - **On a phone** Helm installs from the browser like an app and opens offline with the last
@@ -223,11 +242,10 @@ sleeps. A Pi 4 or 5 with 2 GB or more works; the steps assume Raspberry Pi OS Li
    sudo tailscale up                  # open the link it prints and sign in
    ```
 
-3. **Get Helm.** The repository is private, so sign in to GitHub first (`sudo apt install gh`,
-   then `gh auth login`):
+3. **Get Helm:**
 
    ```bash
-   gh repo clone Motyst/helm && cd helm
+   git clone https://github.com/Motyst/helm.git && cd helm
    ```
 
 4. **Settings.** From your computer, copy your `.env` over (it holds the password and the OpenAI
@@ -323,7 +341,10 @@ change access `create_task`, `update_task`, `start_task`, `pause_task`, `complet
 `reopen_task`, `move_task`. Read-only tokens only see the read tools. There is no delete tool.
 
 **REST**: every `/api/v1` endpoint accepts `Authorization: Bearer helm_...`, with the same
-scope rules. Tasks created with a token are marked `ai:<token name>`.
+scope rules. Tasks created with a token are marked `ai:<token name>`. `DELETE
+/api/v1/projects/:id` archives a project; add `?permanent=true` to delete it and its tasks
+(tokens need read and change access to all projects). The timer endpoints
+(`/api/v1/timer`) are for the owner only.
 
 Assistants that only accept OAuth connectors (such as Claude or ChatGPT on the web) can't use a
 plain token yet.

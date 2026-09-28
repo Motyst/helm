@@ -349,8 +349,11 @@
 
 /* ----- Project dialog ----- */
 
-.editor-small {
-  width: min(26rem, calc(100vw - 2rem));
+/* Wider screens only: on phones it stays a full-width bottom sheet. */
+@media (min-width: 561px) {
+  .editor-small {
+    width: min(26rem, calc(100vw - 2rem));
+  }
 }
 .button-row {
   display: flex;
