@@ -1,4 +1,5 @@
 import type {
+  ActivityPage,
   ApiToken,
   ApplyResult,
   AssistantChange,
@@ -12,6 +13,7 @@ import type {
   DoneLogPage,
   MoveProjectInput,
   PushSubscriptionInput,
+  SetAgentStateInput,
   StartTimerInput,
   Timer,
   MoveTaskInput,
@@ -75,6 +77,13 @@ function queryString(q: object): string {
 
 export type TaskAction = 'start' | 'stop' | 'complete' | 'reopen';
 
+export interface ActivityQuery {
+  who?: 'all' | 'agents';
+  taskId?: string;
+  limit?: number;
+  cursor?: number;
+}
+
 /** The device's time zone, so the server's idea of "today" matches the user's. */
 const tzQuery = () => queryString({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
 
@@ -125,7 +134,10 @@ export const api = {
   deleteTask: (id: string) => request<Task>('DELETE', `/tasks/${id}`),
   taskAction: (id: string, action: TaskAction) => request<Task>('POST', `/tasks/${id}/${action}`),
   moveTask: (id: string, input: MoveTaskInput) => request<Task>('POST', `/tasks/${id}/move`, input),
+  setAgentState: (id: string, input: SetAgentStateInput) => request<Task>('POST', `/tasks/${id}/agent`, input),
   done: (q: DoneQuery) => request<DoneLogPage>('GET', `/done${queryString(q)}`),
+  activity: (q: ActivityQuery) => request<ActivityPage>('GET', `/activity${queryString(q)}`),
+  undo: (batchId: string) => request<{ ok: true }>('POST', `/activity/${encodeURIComponent(batchId)}/undo`),
 
   /** Archived ones too, so the Done log can still name them. */
   projects: () => request<Project[]>('GET', '/projects?includeArchived=true'),

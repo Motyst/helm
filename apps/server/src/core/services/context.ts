@@ -1,5 +1,6 @@
 import { events, type Db, type EventRow, type Tx } from '@helm/db';
 import type { ApiToken, EventEntity, HelmEvent, Project, Task, Timer } from '@helm/shared';
+import { ulid } from 'ulidx';
 import type { TaskRules } from '../../config.ts';
 import { actorOf, type Principal } from '../auth/principal.ts';
 import type { EventBus } from '../events/bus.ts';
@@ -36,15 +37,22 @@ export function toHelmEvent(r: EventRow): HelmEvent {
 /**
  * Run a write in one transaction. Events emitted inside are stored in the same transaction
  * and published to the bus only after commit, so subscribers never see rolled-back changes.
+ * They share a batch id, so the activity log shows (and undoes) them as one step.
  */
-export function mutate<T>(ctx: ServiceContext, p: Principal, fn: (tx: Tx, emit: Emit) => T): T {
+export function mutate<T>(
+  ctx: ServiceContext,
+  p: Principal,
+  fn: (tx: Tx, emit: Emit) => T,
+  o: { undoOf?: string } = {},
+): T {
   const committed: HelmEvent[] = [];
+  const batchId = ulid();
   const result = ctx.db.transaction((tx) => {
     const actor = actorOf(p);
     const emit: Emit = (e) => {
       const row = tx
         .insert(events)
-        .values({ at: ctx.now(), actor, ...e })
+        .values({ at: ctx.now(), actor, ...e, batchId, undoOf: o.undoOf ?? null })
         .returning()
         .get();
       committed.push(toHelmEvent(row));

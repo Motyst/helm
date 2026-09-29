@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState, type KeyboardEvent } from 'react';
 import type { Task, TaskNode } from '@helm/shared';
 import { formatMinutes } from '../../lib/format.ts';
+import { agentBadge } from './agent-badge.ts';
 
 export interface CardActions {
   onEdit: (task: Task) => void;
@@ -19,6 +20,7 @@ interface CardProps extends CardActions {
 export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSubtask }: CardProps) {
   const [open, setOpen] = useState(false);
   const active = task.status === 'in_progress' || task.subtasks.some((s) => s.status === 'in_progress');
+  const agent = agentBadge(task);
 
   return (
     <article className={`card ${active ? 'is-active' : ''} ${overlay ? 'is-overlay' : ''}`}>
@@ -34,6 +36,7 @@ export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSu
         </button>
         <div className="card-meta">
           {active && <span className="card-live">In progress</span>}
+          {agent && <span className={`card-agent card-agent-${task.agentState}`}>{agent}</span>}
           {task.estimateMinutes && <span>{formatMinutes(task.estimateMinutes)}</span>}
           {task.progress && (
             <button

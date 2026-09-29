@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 
-export type Route = 'focus' | 'board' | 'done' | 'settings';
+export type Route = 'focus' | 'board' | 'done' | 'activity' | 'settings';
 
 const ROUTES: Record<string, Route> = {
   '': 'focus',
   '#/': 'focus',
   '#/board': 'board',
   '#/done': 'done',
+  '#/activity': 'activity',
   '#/settings': 'settings',
 };
 

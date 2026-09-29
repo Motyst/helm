@@ -97,11 +97,12 @@ describe('voice parse', () => {
         task({ title: 'Plan trip', project: 'Travel', estimateMinutes: 5000 }),
         task({ title: 'Call mum', project: 'Inbox' }),
         task({ title: '   ' }),
+        task({ title: 'Email Sam', project: 'o' }),
       ],
     });
     const { sendText, services } = await makeApp({ llm });
     const home = services.projects.create(OWNER, { name: 'Home' });
-    services.projects.create(OWNER, { name: 'Work' });
+    const work = services.projects.create(OWNER, { name: 'Work' });
 
     const res = await sendText('fix the gutter now, half an hour...');
     expect(res.status).toBe(200);
@@ -114,6 +115,7 @@ describe('voice parse', () => {
         notes: null,
         projectId: home.id,
         unmatchedProject: null,
+        projectChoices: [],
         priority: 'now',
         estimateMinutes: 30,
         subtasks: ['Buy brackets', 'Ladder'],
@@ -123,11 +125,22 @@ describe('voice parse', () => {
         notes: null,
         projectId: null,
         unmatchedProject: 'Travel',
+        projectChoices: [],
         priority: null,
         estimateMinutes: null,
         subtasks: [],
       },
       expect.objectContaining({ title: 'Call mum', projectId: null, unmatchedProject: null }),
+      // Fits two projects: no guess, the user picks.
+      expect.objectContaining({
+        title: 'Email Sam',
+        projectId: null,
+        unmatchedProject: null,
+        projectChoices: [
+          { id: home.id, name: 'Home' },
+          { id: work.id, name: 'Work' },
+        ],
+      }),
     ]);
 
     const req = requests[0]!;

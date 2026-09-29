@@ -2,14 +2,17 @@ import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, max, ne, o
 import { alias } from 'drizzle-orm/sqlite-core';
 import { projects, tasks, type TaskRow, type Tx } from '@helm/db';
 import {
+  AppendNoteInput,
   ArrangeTasksInput,
   CreateTaskInput,
+  SetAgentStateInput,
   DoneLogQuery,
   INBOX,
   MoveTaskInput,
   UpdateTaskInput,
   byPosition,
   computeFocus,
+  type AgentState,
   type DoneLogPage,
   type Focus,
   type Task,
@@ -17,14 +20,16 @@ import {
 } from '@helm/shared';
 import { generateNKeysBetween } from 'fractional-indexing';
 import { ulid } from 'ulidx';
-import { assertRead, assertWrite, projectScope, type Principal } from '../auth/principal.ts';
-import { invalid, notFound, parse } from '../errors.ts';
+import { actorOf, assertRead, assertWrite, projectScope, type Principal } from '../auth/principal.ts';
+import { forbidden, HelmError, invalid, notFound, parse } from '../errors.ts';
 import { mutate, type Emit, type ServiceContext } from './context.ts';
 import { toTask } from './mappers.ts';
 import { keyAfter, keyBetweenNeighbours } from './ordering.ts';
 import { getLiveProject } from './project.service.ts';
 
 type Patch = Partial<Omit<TaskRow, 'id' | 'createdAt'>>;
+
+const NOTES_MAX = 20_000;
 
 export class TaskService {
   constructor(private readonly ctx: ServiceContext) {}
@@ -153,6 +158,7 @@ export class TaskService {
         notes?: string | null;
         estimateMinutes?: number | null;
         parentTaskId: string | null;
+        handOff?: boolean;
       }) => {
         const now = this.ctx.now();
         const row = tx
@@ -168,6 +174,7 @@ export class TaskService {
             parentTaskId: values.parentTaskId,
             position: keyAfter(this.lastSiblingPosition(tx, values.parentTaskId)),
             source,
+            agentState: values.handOff ? (i.agentState ?? null) : null,
             createdAt: now,
             updatedAt: now,
           })
@@ -177,7 +184,7 @@ export class TaskService {
         return row;
       };
 
-      const row = insert({ ...i, parentTaskId: parent?.id ?? null });
+      const row = insert({ ...i, parentTaskId: parent?.id ?? null, handOff: true });
       for (const sub of i.subtasks ?? []) insert({ ...sub, parentTaskId: row.id });
 
       // A done parent can't have open subtasks.
@@ -194,7 +201,13 @@ export class TaskService {
 
       const fields: Patch = {};
       if (patch.title !== undefined) fields.title = patch.title;
-      if (patch.notes !== undefined) fields.notes = patch.notes;
+      if (patch.notes !== undefined && patch.notes !== row.notes) {
+        // Agents may add to notes but never rewrite or clear what's there.
+        if (p.kind === 'token' && row.notes && !patch.notes?.startsWith(row.notes)) {
+          throw forbidden('Agents can add to notes but not rewrite them. Use add_note (POST /tasks/:id/notes).');
+        }
+        fields.notes = patch.notes;
+      }
       if (patch.priority !== undefined) fields.priority = patch.priority;
       if (patch.estimateMinutes !== undefined) fields.estimateMinutes = patch.estimateMinutes;
       if (patch.projectId !== undefined && patch.projectId !== row.projectId) {
@@ -207,8 +220,45 @@ export class TaskService {
         emitTask(emit, 'updated', row);
         if (fields.projectId !== undefined) this.cascadeProject(tx, emit, row);
       }
-      if (patch.status !== undefined) row = this.transition(tx, emit, row, patch.status);
+      if (patch.agentState !== undefined && patch.agentState !== row.agentState) {
+        row = this.handOff(tx, emit, p, row, patch.agentState);
+      }
+      if (patch.status !== undefined) row = this.transition(tx, emit, row, this.checkStatusChange(p, row, patch.status));
       return toTask(row);
+    });
+  }
+
+  /** Add a paragraph to the notes, signed and dated. The only way agents write notes. */
+  appendNote(p: Principal, id: string, input: unknown): Task {
+    const { text } = parse(AppendNoteInput, input);
+    return mutate(this.ctx, p, (tx, emit) => {
+      const row = this.getRow(tx, id);
+      assertWrite(p, row.projectId);
+      const updated = this.write(tx, row.id, { notes: this.withNote(p, row.notes, text) });
+      emitTask(emit, 'noted', updated);
+      return toTask(updated);
+    });
+  }
+
+  /**
+   * Hand a task to agents and back:
+   * - `ready`: any agent may claim it (set by the owner, a sorting agent, or an agent handing it back)
+   * - `working`: claimed; only tasks marked ready, and never one another agent holds
+   * - `review`: the claiming agent says it's finished; the owner checks and completes it
+   * - null: no longer for agents
+   */
+  setAgentState(p: Principal, id: string, input: unknown): Task {
+    const i = parse(SetAgentStateInput, input);
+    return mutate(this.ctx, p, (tx, emit) => {
+      let row = this.getRow(tx, id);
+      assertWrite(p, row.projectId);
+      // Check the hand-off first: a refused claim shouldn't leave its note behind.
+      const next = this.handOff(tx, emit, p, row, i.state, true);
+      if (i.note) {
+        row = this.write(tx, row.id, { notes: this.withNote(p, row.notes, i.note) });
+        emitTask(emit, 'noted', row);
+      }
+      return toTask(next ? this.handOff(tx, emit, p, row, i.state) : row);
     });
   }
 
@@ -290,7 +340,7 @@ export class TaskService {
     return mutate(this.ctx, p, (tx, emit) => {
       const row = this.getRow(tx, id);
       assertWrite(p, row.projectId);
-      return toTask(this.transition(tx, emit, row, status));
+      return toTask(this.transition(tx, emit, row, this.checkStatusChange(p, row, status)));
     });
   }
 
@@ -332,7 +382,8 @@ export class TaskService {
       updated = this.write(tx, row.id, { status: to, startedAt: now, completedAt: null });
       emitTask(emit, 'started', updated);
     } else if (to === 'done') {
-      updated = this.write(tx, row.id, { status: to, completedAt: now });
+      // Finished: no longer waiting on or for an agent.
+      updated = this.write(tx, row.id, { status: to, completedAt: now, agentState: null, agentClaimedBy: null });
       emitTask(emit, 'completed', updated);
       for (const child of this.children(tx, row.id)) {
         if (child.status !== 'done') this.transition(tx, emit, child, 'done');
@@ -362,6 +413,63 @@ export class TaskService {
       const oldest = active.shift()!;
       this.transition(tx, emit, oldest, 'todo');
     }
+  }
+
+  // ---------- Agent hand-off ----------
+
+  /** Agents hand finished work over for review; completing it is the owner's call. */
+  private checkStatusChange(p: Principal, row: TaskRow, to: TaskStatus): TaskStatus {
+    if (p.kind === 'token' && to === 'done' && (row.agentState === 'working' || row.agentState === 'review')) {
+      throw forbidden('This task was handed to an agent: submit it for review instead. The owner completes it.');
+    }
+    return to;
+  }
+
+  /** Apply a hand-off step, or with `dryRun` only check it's allowed (true = something would change). */
+  private handOff(tx: Tx, emit: Emit, p: Principal, row: TaskRow, to: AgentState | null, dryRun: true): boolean;
+  private handOff(tx: Tx, emit: Emit, p: Principal, row: TaskRow, to: AgentState | null): TaskRow;
+  private handOff(tx: Tx, emit: Emit, p: Principal, row: TaskRow, to: AgentState | null, dryRun = false): TaskRow | boolean {
+    const me = actorOf(p);
+    const owner = p.kind === 'owner';
+    const holder = row.agentClaimedBy;
+    const heldByOther = row.agentState === 'working' && holder !== null && holder !== me;
+    const who = holder?.replace(/^token:/, '') ?? 'Another agent';
+
+    if (to !== null && row.status === 'done') throw invalid('This task is already done.');
+    if (to === 'working') {
+      if (heldByOther && !owner) throw new HelmError('conflict', `${who} is already working on this task.`);
+      if (!owner && row.agentState !== 'ready' && !(row.agentState === 'working' && holder === me)) {
+        throw forbidden('Only tasks marked for an agent (state "ready") can be claimed.');
+      }
+    } else if (to === 'review') {
+      if (!owner && !(row.agentState === 'working' && holder === me)) {
+        throw forbidden('Claim the task before submitting it for review.');
+      }
+    } else if (!owner && heldByOther) {
+      throw new HelmError('conflict', `${who} is working on this task; only it or the owner can change that.`);
+    }
+
+    const fields: Patch =
+      to === 'working'
+        ? { agentState: to, agentClaimedBy: me }
+        : to === 'review'
+          ? { agentState: to, agentClaimedBy: holder ?? me }
+          : { agentState: to, agentClaimedBy: null };
+    const changes = fields.agentState !== row.agentState || fields.agentClaimedBy !== row.agentClaimedBy;
+    if (dryRun) return changes;
+    if (!changes) return row;
+    const updated = this.write(tx, row.id, fields);
+    emitTask(emit, 'agent', updated);
+    return updated;
+  }
+
+  private withNote(p: Principal, notes: string | null, text: string): string {
+    const who = p.kind === 'owner' ? (p.via ?? 'you') : p.name;
+    const day = this.ctx.now().toISOString().slice(0, 10);
+    const entry = `— ${who}, ${day}: ${text.trim()}`;
+    const next = notes?.trim() ? `${notes.trimEnd()}\n\n${entry}` : entry;
+    if (next.length > NOTES_MAX) throw invalid('The notes are full. Ask the owner to tidy them up first.');
+    return next;
   }
 
   // ---------- Helpers ----------

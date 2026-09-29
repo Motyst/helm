@@ -1,9 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { PRIORITIES, matchProject, parseQuickAdd, type Priority, type Task } from '@helm/shared';
+import { PRIORITIES, parseQuickAdd, projectCandidates, type Priority, type Task } from '@helm/shared';
 import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
-import { upsertTask, useCreateProject, useProjects, useTasks } from '../../lib/queries.ts';
+import { upsertTask, useCreateProject, useProjects, useSetAgentState, useTaskAction, useTasks } from '../../lib/queries.ts';
+import { hrefFor } from '../../lib/route.ts';
+import { agentName } from '../board/agent-badge.ts';
 import type { EditorTarget } from './EditorContext.tsx';
 import { createFromDraft, draftFrom, draftFromSuggestion, saveDraft, type SubtaskDraft, type TaskDraft } from './save.ts';
 import './editor.css';
@@ -34,6 +36,8 @@ export function TaskDialog({ target, queued, onClose }: Props) {
 
   const editing: Task | undefined =
     target.mode === 'edit' ? tasks.data?.find((t) => t.id === target.taskId && !t.deletedAt) : undefined;
+  // The task as it was when the dialog opened: Save sends only what the user changed since.
+  const [opened] = useState(editing);
   const originalSubs = useMemo(
     () => (editing ? (tasks.data ?? []).filter((t) => t.parentTaskId === editing.id && !t.deletedAt) : []),
     // Snapshot at open: later live updates shouldn't clobber what's being typed.
@@ -56,9 +60,14 @@ export function TaskDialog({ target, queued, onClose }: Props) {
             priority: target.mode === 'create' ? (target.defaults.priority ?? 'soon') : 'soon',
             estimateMinutes: null,
             subtasks: [],
+            agentReady: false,
           },
   );
   const [unmatchedProject, setUnmatchedProject] = useState<string | null>(voice?.suggestion.unmatchedProject ?? null);
+  // A heard or typed name that fits several projects: offer them rather than guess.
+  const [projectChoices, setProjectChoices] = useState<{ id: string; name: string }[]>(
+    voice?.suggestion.projectChoices ?? [],
+  );
   const [newProjectName, setNewProjectName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -98,19 +107,16 @@ export function TaskDialog({ target, queued, onClose }: Props) {
 
   function onTitleChange(raw: string) {
     const q = parseQuickAdd(raw);
+    const hits = q.projectQuery && !isSubtask ? projectCandidates(q.projectQuery, projects.data ?? []) : [];
     setDraft((d) => {
       const next = { ...d, title: raw };
       if (q.priority) next.priority = q.priority;
       if (q.estimateMinutes) next.estimateMinutes = q.estimateMinutes;
-      if (q.projectQuery && !isSubtask) {
-        const match = matchProject(q.projectQuery, projects.data ?? []);
-        if (match) next.projectId = match.id;
-      }
+      if (hits.length === 1) next.projectId = hits[0]!.id;
       return next;
     });
-    setUnmatchedProject(
-      q.projectQuery && !isSubtask && !matchProject(q.projectQuery, projects.data ?? []) ? q.projectQuery : null,
-    );
+    setUnmatchedProject(q.projectQuery && hits.length === 0 ? q.projectQuery : null);
+    setProjectChoices(hits.length > 1 ? hits : []);
   }
 
   async function addProject(name: string) {
@@ -165,7 +171,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
     try {
       const final = { ...draft, title };
       if (editing) {
-        await saveDraft(editing, originalSubs, final);
+        await saveDraft(opened ?? editing, editing, originalSubs, final);
       } else {
         upsertTask(qc, await createFromDraft(final, parentId, voice ? 'voice' : undefined));
       }
@@ -274,6 +280,26 @@ export function TaskDialog({ target, queued, onClose }: Props) {
           )}
           {!draft.title && !editing && !voice && (
             <p className="field-hint">Shorthand works here: #project, !now, ~30m</p>
+          )}
+          {projectChoices.length > 0 && (
+            <p className="field-hint">
+              Which project?{' '}
+              {projectChoices.map((p, i) => (
+                <span key={p.id}>
+                  {i > 0 && ' or '}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => {
+                      set('projectId', p.id);
+                      setProjectChoices([]);
+                    }}
+                  >
+                    {p.name}
+                  </button>
+                </span>
+              ))}
+            </p>
           )}
           {unmatchedProject && (
             <p className="field-hint">
@@ -453,6 +479,25 @@ export function TaskDialog({ target, queued, onClose }: Props) {
           </fieldset>
         )}
 
+        {!isSubtask &&
+          (editing && (editing.agentState === 'working' || editing.agentState === 'review') ? (
+            <AgentStatus
+              task={editing}
+              onChange={(ready) => set('agentReady', ready)}
+              onCompleted={() => close()}
+            />
+          ) : (
+            <label className="editor-agent">
+              <input type="checkbox" checked={draft.agentReady} onChange={(e) => set('agentReady', e.target.checked)} />
+              <span>
+                <strong>An agent can do this</strong>
+                <span className="field-hint">
+                  Agents connected to Helm may claim it, work on it and hand it back for you to review.
+                </span>
+              </span>
+            </label>
+          ))}
+
         <div className="field">
           <label htmlFor={ids.notes}>Notes</label>
           <textarea
@@ -477,6 +522,18 @@ export function TaskDialog({ target, queued, onClose }: Props) {
               {confirmDelete ? 'Confirm delete' : 'Delete'}
             </button>
           )}
+          {editing && (
+            <button
+              type="button"
+              className="btn btn-quiet"
+              onClick={() => {
+                close();
+                window.location.hash = `${hrefFor('activity')}?who=all&task=${editing.id}`;
+              }}
+            >
+              History
+            </button>
+          )}
           <span className="spacer" />
           <button type="button" className="btn btn-quiet" onClick={() => close(true)}>
             {queued ? 'Skip' : 'Cancel'}
@@ -487,5 +544,53 @@ export function TaskDialog({ target, queued, onClose }: Props) {
         </footer>
       </form>
     </dialog>
+  );
+}
+
+/** A task an agent holds: who, and what the owner can do about it. */
+function AgentStatus({
+  task,
+  onChange,
+  onCompleted,
+}: {
+  task: Task;
+  onChange: (stillForAgents: boolean) => void;
+  onCompleted: () => void;
+}) {
+  const setState = useSetAgentState();
+  const action = useTaskAction();
+  const who = agentName(task.agentClaimedBy);
+  const busy = setState.isPending || action.isPending;
+  const hand = (state: 'ready' | null) =>
+    setState.mutate({ id: task.id, state }, { onSuccess: () => onChange(state !== null) });
+
+  return (
+    <div className={`editor-agent-status is-${task.agentState}`} role="status">
+      <p>
+        {task.agentState === 'working'
+          ? `${who} is working on this.`
+          : `${who} says this is finished. Check the notes, then mark it done or send it back.`}
+      </p>
+      <div className="editor-agent-actions">
+        {task.agentState === 'review' && (
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={busy}
+            onClick={() => action.mutate({ id: task.id, action: 'complete' }, { onSuccess: onCompleted })}
+          >
+            Mark done
+          </button>
+        )}
+        {task.agentState === 'review' && (
+          <button type="button" className="btn" disabled={busy} onClick={() => hand('ready')}>
+            Send back
+          </button>
+        )}
+        <button type="button" className="btn btn-quiet" disabled={busy} onClick={() => hand(null)}>
+          Take it off the agents’ list
+        </button>
+      </div>
+    </div>
   );
 }

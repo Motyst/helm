@@ -6,6 +6,7 @@ import { keys, useAllProjects, useDoneLog, useTaskAction, useTasks } from '../..
 import { readHashParams, writeHashParams } from '../../lib/route.ts';
 import { ProjectLabel, type ProjectMap } from '../../ui/ProjectLabel.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { LogTabs } from '../activity/LogTabs.tsx';
 import {
   RANGES,
   RANGE_LABEL,
@@ -57,6 +58,7 @@ export function DoneView() {
 
   return (
     <main className="log">
+      <LogTabs current="done" />
       <header className="log-head">
         <h1 className="log-summary" aria-live="polite">
           {log.isPending ? 'Done' : summary(count, log.hasNextPage, filter, projectMap)}
@@ -276,6 +278,7 @@ function plural(n: number, word: string): string {
 
 function sourceLabel(source: Task['source']): string {
   if (source === 'voice') return 'Added by voice';
+  if (source === 'ai:assistant') return 'Added by the assistant';
   return `Added by ${source.slice('ai:'.length)}`;
 }
 

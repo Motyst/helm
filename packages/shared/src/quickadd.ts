@@ -67,15 +67,28 @@ export function parseQuickAdd(input: string): QuickAdd {
 
 const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
+/**
+ * Projects a name could mean, from the best tier that has any: exact name, then names that start
+ * with it, then names that contain it (case, spaces and punctuation ignored). More than one = ambiguous.
+ */
+export function projectCandidates<P extends { name: string }>(query: string, projects: readonly P[]): P[] {
+  const q = normalize(query);
+  if (!q) return [];
+  const named = projects.map((p) => ({ p, n: normalize(p.name) }));
+  for (const test of [(n: string) => n === q, (n: string) => n.startsWith(q), (n: string) => n.includes(q)]) {
+    const hits = named.filter((x) => test(x.n)).map((x) => x.p);
+    if (hits.length) return hits;
+  }
+  return [];
+}
+
 /** Best project for a `#query`: exact name, then prefix, then substring (spaces/punctuation ignored). */
 export function matchProject<P extends { name: string }>(query: string, projects: readonly P[]): P | null {
-  const q = normalize(query);
-  if (!q) return null;
-  const named = projects.map((p) => ({ p, n: normalize(p.name) }));
-  return (
-    named.find((x) => x.n === q)?.p ??
-    named.find((x) => x.n.startsWith(q))?.p ??
-    named.find((x) => x.n.includes(q))?.p ??
-    null
-  );
+  return projectCandidates(query, projects)[0] ?? null;
+}
+
+/** The one project a name means, or null when it matches none or several. */
+export function uniqueProject<P extends { name: string }>(query: string, projects: readonly P[]): P | null {
+  const hits = projectCandidates(query, projects);
+  return hits.length === 1 ? hits[0]! : null;
 }

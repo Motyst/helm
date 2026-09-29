@@ -20,6 +20,8 @@ export function toTask(r: TaskRow): Task {
     startedAt: iso(r.startedAt),
     completedAt: iso(r.completedAt),
     deletedAt: iso(r.deletedAt),
+    agentState: r.agentState ?? null,
+    agentClaimedBy: r.agentClaimedBy ?? null,
   };
 }
 

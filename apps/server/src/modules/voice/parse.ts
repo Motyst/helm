@@ -1,5 +1,5 @@
 import { ProviderError, type LlmProvider } from '@helm/providers';
-import { matchProject, PRIORITIES, type TaskSuggestion } from '@helm/shared';
+import { PRIORITIES, projectCandidates, type TaskSuggestion } from '@helm/shared';
 import { z } from 'zod';
 
 /** What the model fills in. Plain on purpose: limits are enforced in `clean`. */
@@ -72,6 +72,7 @@ function plain(transcript: string): TaskSuggestion {
     notes: null,
     projectId: null,
     unmatchedProject: null,
+    projectChoices: [],
     priority: null,
     estimateMinutes: null,
     subtasks: [],
@@ -86,10 +87,13 @@ export function clean(t: ModelTask, projects: NamedProject[]): TaskSuggestion | 
 
   let projectId: string | null = null;
   let unmatchedProject: string | null = null;
+  let projectChoices: NamedProject[] = [];
   const heard = t.project ? oneLine(t.project) : '';
   if (heard && !/^inbox$/i.test(heard)) {
-    const match = matchProject(heard, projects);
-    if (match) projectId = match.id;
+    const hits = projectCandidates(heard, projects);
+    // Several projects fit: don't guess, let the user pick.
+    if (hits.length === 1) projectId = hits[0]!.id;
+    else if (hits.length > 1) projectChoices = hits.slice(0, 6).map(({ id, name }) => ({ id, name }));
     else unmatchedProject = heard.slice(0, 60);
   }
 
@@ -99,6 +103,7 @@ export function clean(t: ModelTask, projects: NamedProject[]): TaskSuggestion | 
     notes: t.notes?.trim() ? t.notes.trim().slice(0, 20_000) : null,
     projectId,
     unmatchedProject,
+    projectChoices,
     priority: t.priority,
     estimateMinutes: est !== null && est >= 1 && est <= 24 * 60 ? est : null,
     subtasks: t.subtasks

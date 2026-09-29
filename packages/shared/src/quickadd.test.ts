@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchProject, parseEstimate, parseQuickAdd } from './quickadd.ts';
+import { matchProject, parseEstimate, parseQuickAdd, projectCandidates, uniqueProject } from './quickadd.ts';
 
 describe('parseQuickAdd', () => {
   it('extracts project, priority and estimate', () => {
@@ -46,5 +46,22 @@ describe('matchProject', () => {
     expect(matchProject('homeadmin', projects)?.name).toBe('Home Admin');
     expect(matchProject('rit', projects)?.name).toBe('Writing');
     expect(matchProject('zzz', projects)).toBeNull();
+  });
+});
+
+describe('projectCandidates', () => {
+  const projects = [{ name: 'Helm' }, { name: 'Helm website' }, { name: 'App' }, { name: 'Apple' }, { name: 'Mapper' }];
+  it('returns every match of the best tier', () => {
+    expect(projectCandidates('helm', projects).map((p) => p.name)).toEqual(['Helm']);
+    expect(projectCandidates('app', projects).map((p) => p.name)).toEqual(['App']);
+    expect(projectCandidates('ap', projects).map((p) => p.name)).toEqual(['App', 'Apple']);
+    expect(projectCandidates('pp', projects).map((p) => p.name)).toEqual(['App', 'Apple', 'Mapper']);
+    expect(projectCandidates('', projects)).toEqual([]);
+  });
+
+  it('uniqueProject refuses to guess', () => {
+    expect(uniqueProject('helm web', projects)?.name).toBe('Helm website');
+    expect(uniqueProject('ap', projects)).toBeNull();
+    expect(uniqueProject('zzz', projects)).toBeNull();
   });
 });

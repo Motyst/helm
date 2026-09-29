@@ -17,6 +17,12 @@ export function apiRoutes(s: Services): Hono<AppEnv> {
   for (const action of ['start', 'stop', 'complete', 'reopen'] as const) {
     r.post(`/tasks/:id/${action}`, (c) => c.json(s.tasks[action](c.var.principal, c.req.param('id'))));
   }
+  r.post('/tasks/:id/notes', async (c) =>
+    c.json(s.tasks.appendNote(c.var.principal, c.req.param('id'), await jsonBody(c))),
+  );
+  r.post('/tasks/:id/agent', async (c) =>
+    c.json(s.tasks.setAgentState(c.var.principal, c.req.param('id'), await jsonBody(c))),
+  );
 
   r.get('/focus', (c) => c.json(s.tasks.focus(c.var.principal)));
   r.get('/done', (c) => c.json(s.tasks.doneLog(c.var.principal, c.req.query())));
@@ -39,6 +45,10 @@ export function apiRoutes(s: Services): Hono<AppEnv> {
         : s.projects.archive(c.var.principal, c.req.param('id')),
     ),
   );
+
+  // ----- Activity (owner only) -----
+  r.get('/activity', (c) => c.json(s.activity.list(c.var.principal, c.req.query())));
+  r.post('/activity/:batch/undo', (c) => c.json(s.activity.undo(c.var.principal, c.req.param('batch'))));
 
   // ----- API tokens (owner only) -----
   r.get('/tokens', (c) => c.json(s.tokens.list(c.var.principal)));

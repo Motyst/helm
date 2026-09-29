@@ -5,6 +5,7 @@ import type { z } from 'zod';
 import { createApp } from '../src/app.ts';
 import { ASSISTANT, OWNER } from '../src/core/auth/principal.ts';
 import { assistantModule } from '../src/modules/assistant/index.ts';
+import { toChanges } from '../src/modules/assistant/chat.ts';
 import { buildSnapshot } from '../src/modules/assistant/snapshot.ts';
 import { setup, testConfig, token } from './helpers.ts';
 
@@ -111,6 +112,38 @@ describe('snapshot', () => {
     expect(s.text).toContain('- Old thing (Inbox, done');
     expect(s.refs.get('t1')?.id).toBe(a.id);
     expect(s.open.map((t) => t.title)).toEqual(['Write report']);
+  });
+});
+
+describe('proposed changes', () => {
+  const change = (o: Partial<Parameters<typeof toChanges>[0][number]>) => ({
+    action: 'update' as const,
+    ref: 't1',
+    title: null,
+    notes: null,
+    project: null,
+    priority: null,
+    estimateMinutes: null,
+    parentRef: null,
+    subtasks: [],
+    ...o,
+  });
+
+  it('adds proposed notes below existing ones and never guesses an ambiguous project', () => {
+    const { services } = setup();
+    services.projects.create(OWNER, { name: 'App' });
+    services.projects.create(OWNER, { name: 'Apple' });
+    const t = services.tasks.create(OWNER, { title: 'Fix login', notes: 'Only on Safari' });
+    const s = buildSnapshot(services.tasks.board(OWNER), services.projects.list(OWNER), [], new Date());
+
+    expect(toChanges([change({ notes: 'Try the cookie fix' })], s)).toEqual([
+      { action: 'update', taskId: t.id, notes: 'Only on Safari\n\nTry the cookie fix' },
+    ]);
+    // A full rewrite that keeps the old text, or an explicit clear, goes through as is.
+    expect(toChanges([change({ notes: 'Only on Safari. Fixed.' })], s)[0]).toMatchObject({ notes: 'Only on Safari. Fixed.' });
+    expect(toChanges([change({ notes: '' })], s)[0]).toMatchObject({ notes: null });
+    expect(toChanges([change({ project: 'ap' })], s)).toEqual([]);
+    expect(toChanges([change({ project: 'apple' })], s)[0]).toMatchObject({ projectId: expect.any(String) });
   });
 });
 

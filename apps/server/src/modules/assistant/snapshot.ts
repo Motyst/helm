@@ -69,6 +69,13 @@ export function buildSnapshot(board: Task[], projects: Project[], recentlyDone: 
       t.estimateMinutes ? `estimate ${t.estimateMinutes} min` : null,
       `added ${ago(t.createdAt, now)}`,
       t.source !== 'manual' ? `added by ${t.source}` : null,
+      t.agentState === 'ready'
+        ? 'handed to agents, not claimed yet'
+        : t.agentState === 'working'
+          ? `an agent (${t.agentClaimedBy}) is working on it`
+          : t.agentState === 'review'
+            ? 'an agent finished it, waiting for the user to review'
+            : null,
     ].filter(Boolean);
     lines.push(`- ${parts.join('; ')}`);
     if (t.notes) lines.push(`  notes: ${t.notes.replace(/\s+/g, ' ').slice(0, 300)}`);

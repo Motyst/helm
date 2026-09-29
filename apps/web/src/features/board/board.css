@@ -256,6 +256,32 @@
   color: var(--accent);
   font-weight: 700;
 }
+/* Handed to an agent: quiet while waiting or in progress, loud when it needs your review. */
+.card-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+}
+.card-agent::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+.card-agent-working::before {
+  background: currentColor;
+}
+.card-agent-review {
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.card-agent-review::before {
+  background: currentColor;
+}
 
 .card-subs-toggle {
   display: inline-flex;

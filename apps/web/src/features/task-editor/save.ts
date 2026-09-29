@@ -17,6 +17,8 @@ export interface TaskDraft {
   priority: Priority;
   estimateMinutes: number | null;
   subtasks: SubtaskDraft[];
+  /** Handed to agents (any hand-off state counts; only ready ↔ none is edited in the form). */
+  agentReady: boolean;
 }
 
 export function draftFrom(task: Task, subtasks: Task[]): TaskDraft {
@@ -27,6 +29,7 @@ export function draftFrom(task: Task, subtasks: Task[]): TaskDraft {
     priority: task.priority,
     estimateMinutes: task.estimateMinutes,
     subtasks: subtasks.map((s) => ({ key: s.id, id: s.id, title: s.title, done: s.status === 'done' })),
+    agentReady: task.agentState !== null,
   };
 }
 
@@ -41,6 +44,7 @@ export function draftFromSuggestion(s: TaskSuggestion): TaskDraft {
     priority: s.priority ?? 'soon',
     estimateMinutes: s.estimateMinutes,
     subtasks: s.subtasks.map((title) => ({ key: `voice-${++voiceSeq}`, title, done: false })),
+    agentReady: false,
   };
 }
 
@@ -58,28 +62,41 @@ export function createFromDraft(d: TaskDraft, parentTaskId?: string, source?: Ta
     parentTaskId: parentTaskId ?? null,
     source,
     subtasks: subtasks.length ? subtasks : undefined,
+    agentState: d.agentReady ? 'ready' : undefined,
   });
 }
 
 /**
- * Apply an edited draft: one PATCH for the task's own fields, then subtask creates / renames /
- * status changes / deletes. Live events update the cache as each lands.
+ * Notes to save when the user edited them. If an agent added to the notes while the dialog was
+ * open, its addition is kept below the user's edit instead of being overwritten.
  */
-export async function saveDraft(task: Task, originalSubs: Task[], d: TaskDraft): Promise<void> {
+export function mergeNotes(opened: string | null, live: string | null, edited: string | null): string | null {
+  if (live === opened || !live || !opened || !live.startsWith(opened)) return edited;
+  const added = live.slice(opened.length).trim();
+  return edited ? `${edited.trimEnd()}\n\n${added}` : added;
+}
+
+/**
+ * Apply an edited draft: one PATCH for the fields the user changed since opening the dialog
+ * (so changes made meanwhile by agents or other devices aren't overwritten with stale values),
+ * then subtask creates / renames / status changes / deletes. Live events update the cache.
+ */
+export async function saveDraft(opened: Task, live: Task, originalSubs: Task[], d: TaskDraft): Promise<void> {
   const patch: UpdateTaskInput = {};
-  if (d.title !== task.title) patch.title = d.title;
-  if (cleanNotes(d.notes) !== task.notes) patch.notes = cleanNotes(d.notes);
-  if (d.priority !== task.priority) patch.priority = d.priority;
-  if (d.estimateMinutes !== task.estimateMinutes) patch.estimateMinutes = d.estimateMinutes;
-  if (d.projectId !== task.projectId && !task.parentTaskId) patch.projectId = d.projectId;
-  if (Object.keys(patch).length) await api.updateTask(task.id, patch);
+  if (d.title !== opened.title) patch.title = d.title;
+  if (cleanNotes(d.notes) !== opened.notes) patch.notes = mergeNotes(opened.notes, live.notes, cleanNotes(d.notes));
+  if (d.priority !== opened.priority) patch.priority = d.priority;
+  if (d.estimateMinutes !== opened.estimateMinutes) patch.estimateMinutes = d.estimateMinutes;
+  if (d.projectId !== opened.projectId && !opened.parentTaskId) patch.projectId = d.projectId;
+  if (d.agentReady !== (opened.agentState !== null)) patch.agentState = d.agentReady ? 'ready' : null;
+  if (Object.keys(patch).length) await api.updateTask(opened.id, patch);
 
   const kept = new Set<string>();
   for (const s of d.subtasks) {
     const title = s.title.trim();
     if (!s.id) {
       if (!title) continue;
-      const created = await api.createTask({ title, parentTaskId: task.id });
+      const created = await api.createTask({ title, parentTaskId: opened.id });
       if (s.done) await api.taskAction(created.id, 'complete');
       continue;
     }

@@ -22,6 +22,13 @@
       "when": 1790627942338,
       "tag": "0002_wealthy_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790715752215,
+      "tag": "0003_keen_rictor",
+      "breakpoints": true
     }
   ]
 }

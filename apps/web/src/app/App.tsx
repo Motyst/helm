@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { ActivityView } from '../features/activity/ActivityView.tsx';
 import { AssistantProvider, useAssistant } from '../features/assistant/AssistantContext.tsx';
 import { AssistantIcon, AssistantPanel } from '../features/assistant/AssistantPanel.tsx';
 import { BoardView } from '../features/board/BoardView.tsx';
@@ -136,7 +137,8 @@ function Shell({ sync }: { sync: SyncState }) {
             <a
               key={n.route}
               href={hrefFor(n.route)}
-              aria-current={route === n.route ? 'page' : undefined}
+              // Activity lives under the Done tab.
+              aria-current={route === n.route || (n.route === 'done' && route === 'activity') ? 'page' : undefined}
               aria-keyshortcuts={n.key}
             >
               {n.label}
@@ -197,6 +199,8 @@ function Shell({ sync }: { sync: SyncState }) {
         <BoardView />
       ) : route === 'done' ? (
         <DoneView />
+      ) : route === 'activity' ? (
+        <ActivityView />
       ) : route === 'settings' ? (
         <SettingsView />
       ) : (

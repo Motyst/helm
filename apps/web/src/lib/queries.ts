@@ -16,7 +16,7 @@ import type {
   Timer,
   UpdateProjectInput,
 } from '@helm/shared';
-import { api, type DoneQuery, type TaskAction } from './api.ts';
+import { api, type ActivityQuery, type DoneQuery, type TaskAction } from './api.ts';
 
 export const keys = {
   me: ['me'] as const,
@@ -27,6 +27,7 @@ export const keys = {
   voice: ['voice'] as const,
   assistant: ['assistant'] as const,
   timer: ['timer'] as const,
+  activity: ['activity'] as const,
 };
 
 /** Queries kept on the device so the app opens with the last snapshot, even offline. */
@@ -34,7 +35,9 @@ export const PERSISTED_KEYS: readonly string[] = [keys.me[0], keys.tasks[0], key
 
 /** Signed out or session expired: drop everything cached about the board (and its persisted copy). */
 export function clearUserData(qc: QueryClient) {
-  for (const key of [keys.tasks, keys.projects, keys.done, keys.tokens, keys.timer]) qc.removeQueries({ queryKey: key });
+  for (const key of [keys.tasks, keys.projects, keys.done, keys.tokens, keys.timer, keys.activity]) {
+    qc.removeQueries({ queryKey: key });
+  }
 }
 
 export const useTasks = () => useQuery({ queryKey: keys.tasks, queryFn: api.tasks });
@@ -56,6 +59,44 @@ export function useDoneLog(query: Omit<DoneQuery, 'cursor' | 'limit'>) {
     queryFn: ({ pageParam }) => api.done({ ...query, limit: DONE_PAGE, cursor: pageParam }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+/** Who changed what, newest first, a page at a time. Live events refresh it (see `refreshActivity`). */
+export function useActivity(query: Omit<ActivityQuery, 'cursor' | 'limit'>) {
+  return useInfiniteQuery({
+    queryKey: [...keys.activity, query],
+    queryFn: ({ pageParam }) => api.activity({ ...query, limit: 30, cursor: pageParam }),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+const activityRefresh = new WeakMap<QueryClient, ReturnType<typeof setTimeout>>();
+
+/** One request can emit many events; refetch the activity log once after the burst. */
+export function refreshActivity(qc: QueryClient) {
+  clearTimeout(activityRefresh.get(qc));
+  activityRefresh.set(
+    qc,
+    setTimeout(() => void qc.invalidateQueries({ queryKey: keys.activity }), 250),
+  );
+}
+
+export function useUndo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.undo,
+    // Live events bring the restored tasks; this makes sure the log shows it as undone.
+    onSettled: () => refreshActivity(qc),
+  });
+}
+
+export function useSetAgentState() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string } & Parameters<typeof api.setAgentState>[1]) => api.setAgentState(id, input),
+    onSuccess: (task) => upsertTask(qc, task),
   });
 }
 

@@ -1,5 +1,5 @@
 import type { ChatMessage, LlmProvider, ToolSpec } from '@helm/providers';
-import { AssistantChange, matchProject, PRIORITIES, type ChatStreamEvent, type Project } from '@helm/shared';
+import { AssistantChange, PRIORITIES, uniqueProject, type ChatStreamEvent, type Project } from '@helm/shared';
 import { z } from 'zod';
 import type { Snapshot } from './snapshot.ts';
 
@@ -27,7 +27,7 @@ export const PROPOSE_TOOL: ToolSpec = {
   description:
     'Propose changes to the board. Nothing changes until the user applies them. ' +
     'action create: new task (title required; parentRef makes it a subtask of that task; subtasks lists new subtasks). ' +
-    'action update: change fields of task `ref`; null fields stay as they are. ' +
+    'action update: change fields of task `ref`; null fields stay as they are; notes are added to the existing notes. ' +
     'start / stop / complete / reopen: change the status of task `ref`. ' +
     'project is a project name or "Inbox".',
   schema: Proposal,
@@ -39,6 +39,8 @@ export function chatPrompt(s: Snapshot, today: string, inProgressLimit: number):
 - Answer briefly and concretely, in the language the user writes in. Plain text: no headings, tables or bold. Short "-" lists are fine.
 - Refer to tasks by title, never by ref.
 - You can't change anything yourself. When the user asks for changes (add, edit, move, start, finish or reopen tasks, split one into subtasks), call propose_changes once with all of them and say in a sentence what you proposed. The user reviews and applies them. Don't propose changes they didn't ask for. There is no way to delete tasks.
+- Notes you propose for a task are added below its existing notes; write only the new part.
+- Use project names exactly as listed.
 ${inProgressLimit > 0 ? `- Only ${inProgressLimit} task(s) can be in progress at once; starting another pauses the oldest.` : ''}
 - Priorities: now = today, soon = in the next days, someday = no rush.
 
@@ -53,8 +55,8 @@ function projectIdFor(name: string | null, projects: Project[]): string | null |
   if (name === null) return undefined;
   const n = oneLine(name);
   if (!n || /^inbox$/i.test(n)) return null;
-  // An unknown project isn't created from chat; the field is left alone.
-  return matchProject(n, projects)?.id;
+  // An unknown or ambiguous project isn't guessed or created from chat; the field is left alone.
+  return uniqueProject(n, projects)?.id;
 }
 
 /** Model output → changes with real ids. Anything unresolvable or invalid is dropped. */
@@ -63,7 +65,12 @@ export function toChanges(proposed: ProposedChange[], s: Snapshot): AssistantCha
   for (const c of proposed) {
     const task = c.ref ? s.refs.get(c.ref.trim()) : undefined;
     const estimate = c.estimateMinutes !== null && c.estimateMinutes >= 1 && c.estimateMinutes <= 1440 ? c.estimateMinutes : undefined;
-    const notes = c.notes === null ? undefined : c.notes.trim() || null;
+    // Notes are added to what's there (the model sees only the start of long notes). Empty = clear.
+    const added = c.notes === null ? undefined : c.notes.trim() || null;
+    const notes =
+      added && task?.notes && c.action === 'update' && !added.includes(task.notes.trim())
+        ? `${task.notes.trimEnd()}\n\n${added}`
+        : added;
     let candidate: unknown;
 
     if (c.action === 'create') {

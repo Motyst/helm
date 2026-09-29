@@ -67,7 +67,9 @@ The push keys are made on first start and kept in the database, so there's nothi
   the project and keeps its tasks; deleting asks first, then removes the project and all its
   tasks, open and done, for good.
 - **Done**: what you finished, grouped by day with a time for each, filtered by date range or
-  project. Reopen anything finished by mistake.
+  project. Reopen anything finished by mistake. Its **Activity** tab lists every change, who made
+  it (you, the assistant or an agent) and what it was before, with Undo. See
+  [Activity and undo](#activity-and-undo).
 - **On a phone** Helm installs from the browser like an app and opens offline with the last
   board it saw. The microphone floats at the bottom right, in thumb reach.
 
@@ -85,7 +87,8 @@ switch views.
 Say what needs doing, the way you'd tell a person. Helm transcribes it and fills in the title,
 project, priority, estimate and subtasks, then opens the task with what you said above it.
 Nothing is saved until you press Add task, and several to-dos in one recording become one draft
-each. See [Voice input](#voice-input).
+each. Name the project to file it there; a name that fits several projects makes Helm ask which.
+See [Voice input](#voice-input).
 
 ### Assistant panel
 
@@ -124,6 +127,10 @@ In Settings, create a token for each assistant or script: read only or read and 
 projects or only some, with an optional expiry. It then works with the board through MCP at
 `/mcp` or the REST API at `/api/v1`, and anything it adds is labelled with its name. See
 [Connect AI assistants](#connect-ai-assistants).
+
+Tick **An agent can do this** on a task to hand it over. An agent claims it, adds notes as it
+goes and sends it back for review; the card shows who has it, and **Review** when it's your
+turn. You mark it done or send it back. See [Handing tasks to agents](#handing-tasks-to-agents).
 
 ## Run locally
 
@@ -319,6 +326,8 @@ each request.
   reason for each. Change priorities or move rows, then apply. Undo puts everything back.
 - **Chat**: ask about the board or ask for changes. The assistant only proposes changes (add,
   edit, start, pause, finish, reopen; never delete); tick the ones you want and apply them.
+  Notes it proposes are added below a task's notes, and a project name that fits several
+  projects is left for you to pick.
 
 Applied changes are recorded as `ai:assistant`. Endpoints (owner only): `POST
 /api/v1/assistant/prioritize`, `POST /api/v1/assistant/chat` (streams NDJSON) and `POST
@@ -337,17 +346,63 @@ claude mcp add --transport http helm http://localhost:8787/mcp --header "Authori
 ```
 
 Tools: `get_focus`, `list_tasks`, `get_task`, `list_projects`, `list_done`, and with read and
-change access `create_task`, `update_task`, `start_task`, `pause_task`, `complete_task`,
-`reopen_task`, `move_task`. Read-only tokens only see the read tools. There is no delete tool.
+change access `create_task`, `update_task`, `add_note`, `start_task`, `pause_task`,
+`complete_task`, `reopen_task`, `move_task`, `mark_for_agent`, `claim_task`,
+`submit_for_review` and `hand_back`. Read-only tokens only see the read tools. There is no
+delete tool.
+
+Guard rails, so an agent can't quietly damage the board:
+
+- **Notes are append-only for tokens.** `add_note` adds a signed, dated paragraph; rewriting or
+  clearing notes is refused (the owner can still edit them).
+- **Project names must be unambiguous.** An exact name, or a start or part of one that fits
+  only one project; "ap" with projects App and Apple is refused with both names.
+- **No accidental duplicates.** `create_task` refuses a title already open in the same place
+  unless `allow_duplicate` is true.
+- **Handed-off tasks are completed by you**, not the agent (see below).
+- **Everything can be seen and undone** in [Activity](#activity-and-undo).
 
 **REST**: every `/api/v1` endpoint accepts `Authorization: Bearer helm_...`, with the same
 scope rules. Tasks created with a token are marked `ai:<token name>`. `DELETE
 /api/v1/projects/:id` archives a project; add `?permanent=true` to delete it and its tasks
 (tokens need read and change access to all projects). The timer endpoints
-(`/api/v1/timer`) are for the owner only.
+(`/api/v1/timer`) are for the owner only. `POST /api/v1/tasks/:id/notes` `{"text"}` adds to the
+notes; `POST /api/v1/tasks/:id/agent` `{"state", "note"?}` moves a task through the hand-off.
 
 Assistants that only accept OAuth connectors (such as Claude or ChatGPT on the web) can't use a
 plain token yet.
+
+### Handing tasks to agents
+
+A task handed to agents has a state:
+
+| State | Set by | Means |
+| --- | --- | --- |
+| `ready` | you (the task's checkbox), or a sorting agent with `mark_for_agent` | any agent may take it |
+| `working` | an agent, with `claim_task` | that agent has it; others can't claim it |
+| `review` | the claiming agent, with `submit_for_review` and a note | finished; your turn |
+
+`claim_task` only takes `ready` tasks and doesn't touch what you're focused on (unlike
+`start_task`). An agent that can't finish uses `hand_back` with the reason. A token can't
+complete a task in `working` or `review`: you check the notes and press **Mark done**, or
+**Send back**. Completing a task clears its state.
+
+A setup that works well: one agent that sorts the Inbox now and then (projects, priorities,
+`mark_for_agent` for what an AI can do), and one agent per project, running in that project's
+repository with a token limited to that project, that picks up `ready` tasks
+(`list_tasks` with `agent_state: "ready"`).
+
+### Activity and undo
+
+Done → Activity lists every change to tasks and projects, newest first. One entry is one
+request: completing a task and its subtasks, or an agent's claim and note, show as one step,
+with what changed (old → new). It starts on changes made by agents and the assistant; switch
+to Everyone for yours too. **History** in a task's dialog shows just that task.
+
+**Undo** puts everything an entry changed back the way it was, including deleted tasks. It's
+refused once something has changed the same task since (undo the later change first) and for
+deleted projects. An undo is an entry of its own, so it can be undone too. Owner only:
+`GET /api/v1/activity?who=agents|all&taskId=&cursor=` and `POST /api/v1/activity/:batch/undo`.
 
 ## Layout
 

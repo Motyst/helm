@@ -1,0 +1,91 @@
+/* Activity log: the Done log's layout, one entry per request, agents' fixes marked in the accent. */
+
+.log-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+.log-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-decoration: none;
+}
+.log-tabs a:hover {
+  color: var(--ink);
+}
+.log-tabs a[aria-current='page'] {
+  color: var(--ink);
+  background: var(--shallows);
+}
+
+.act-entry .log-title {
+  font-weight: 400;
+}
+.act-who {
+  font-weight: 700;
+}
+.act-who.is-agent {
+  color: var(--accent);
+}
+.act-fix-agent::after {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 0 1.5px, var(--water) 2px);
+}
+
+.act-also {
+  color: var(--ink-soft);
+}
+.act-details {
+  display: grid;
+  gap: 0.1rem;
+  margin-top: 0.2rem;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  font-weight: 400;
+  white-space: pre-line;
+}
+
+.act-lines {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+.act-lines li {
+  overflow-wrap: anywhere;
+}
+
+.act-entry.is-undone .log-title,
+.act-entry.is-undone .act-lines {
+  text-decoration: line-through;
+  text-decoration-color: var(--contour);
+  color: var(--ink-soft);
+}
+.act-undone {
+  font-weight: 700;
+}
+
+.act-undo.is-blocked {
+  opacity: 0.45;
+}
+/* Unlike Reopen, Undo stays visible on agents' entries: they're what you came here to check. */
+@media (hover: hover) {
+  .act-entry:has(.act-fix-agent) .act-undo {
+    opacity: 1;
+  }
+  .act-entry:has(.act-fix-agent) .act-undo.is-blocked {
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 560px) {
+  .act-entry .log-title {
+    font-weight: 400;
+  }
+}

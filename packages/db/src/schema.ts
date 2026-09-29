@@ -35,6 +35,10 @@ export const tasks = sqliteTable(
     startedAt: ts('started_at'),
     completedAt: ts('completed_at'),
     deletedAt: ts('deleted_at'),
+    /** Handed to an AI agent: ready | working | review; null = not. */
+    agentState: text('agent_state', { enum: ['ready', 'working', 'review'] }),
+    /** Actor that claimed it (e.g. `token:Claude Code`). */
+    agentClaimedBy: text('agent_claimed_by'),
   },
   (t) => [
     index('tasks_parent_idx').on(t.parentTaskId),
@@ -74,8 +78,16 @@ export const events = sqliteTable(
     projectId: text('project_id'),
     action: text('action').notNull(),
     data: text('data', { mode: 'json' }).notNull(),
+    /** Events written by one request share it, so they can be shown and undone together. Null on old rows. */
+    batchId: text('batch_id'),
+    /** The batch this one undid. */
+    undoOf: text('undo_of'),
   },
-  (t) => [index('events_entity_idx').on(t.entity, t.entityId)],
+  (t) => [
+    index('events_entity_idx').on(t.entity, t.entityId),
+    index('events_batch_idx').on(t.batchId),
+    index('events_undo_idx').on(t.undoOf),
+  ],
 );
 
 /**

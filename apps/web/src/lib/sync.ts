@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { ApiToken, HelmEvent, Project, Task, Timer } from '@helm/shared';
-import { keys, removeProject, setTimer, upsertProject, upsertTask, upsertToken } from './queries.ts';
+import { keys, refreshActivity, removeProject, setTimer, upsertProject, upsertTask, upsertToken } from './queries.ts';
 
 export type SyncState = 'connecting' | 'live' | 'offline';
 
@@ -32,6 +32,7 @@ export function useLiveSync(enabled: boolean): SyncState {
       void qc.invalidateQueries({ queryKey: keys.projects });
       void qc.invalidateQueries({ queryKey: keys.done });
       void qc.invalidateQueries({ queryKey: keys.timer });
+      void qc.invalidateQueries({ queryKey: keys.activity });
     };
 
     const onChange = (msg: MessageEvent<string>) => {
@@ -45,8 +46,11 @@ export function useLiveSync(enabled: boolean): SyncState {
       } else if (e.entity === 'project') {
         if (e.action === 'deleted') removeProject(qc, e.entityId);
         else upsertProject(qc, e.data as Project);
+        // Unarchived (undo): its tasks weren't in the board snapshot.
+        if (e.action === 'restored') void qc.invalidateQueries({ queryKey: keys.tasks });
       } else if (e.entity === 'timer') setTimer(qc, e.data as Timer);
       else upsertToken(qc, e.data as ApiToken);
+      if (e.entity === 'task' || e.entity === 'project') refreshActivity(qc);
       // A snapshot request in flight may predate this event; fetch again once it lands.
       const key = keys[e.entity === 'task' ? 'tasks' : e.entity === 'project' ? 'projects' : e.entity === 'timer' ? 'timer' : 'tokens'];
       if (qc.isFetching({ queryKey: key }) > 0) void qc.invalidateQueries({ queryKey: key });

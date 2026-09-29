@@ -20,6 +20,8 @@ function task(p: Partial<Task> & { id: string }): Task {
     startedAt: null,
     completedAt: null,
     deletedAt: null,
+    agentState: null,
+    agentClaimedBy: null,
     ...p,
   };
 }

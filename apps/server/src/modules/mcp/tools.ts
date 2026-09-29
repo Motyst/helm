@@ -1,6 +1,15 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { buildTree, INBOX, matchProject, PRIORITIES, type Priority, type Task, type TaskNode } from '@helm/shared';
+import {
+  AGENT_STATES,
+  buildTree,
+  INBOX,
+  PRIORITIES,
+  projectCandidates,
+  type Priority,
+  type Task,
+  type TaskNode,
+} from '@helm/shared';
 import { z } from 'zod';
 import type { Config } from '../../config.ts';
 import type { Principal } from '../../core/auth/principal.ts';
@@ -13,9 +22,10 @@ const ProjectArg = z
   .string()
   .min(1)
   .max(100)
-  .describe('Project name or id. "Inbox" means no project. Names match loosely (prefix or part of the name).');
+  .describe('Project name or id. "Inbox" means no project. A unique start or part of the name also works; an ambiguous one is refused.');
 const PriorityArg = z.enum(PRIORITIES).describe('now = doing today, soon = this week, someday = later');
 const Minutes = z.number().int().min(1).max(1440);
+const Note = z.string().min(1).max(5000);
 
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -60,6 +70,8 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           ? `At most ${limit} task(s) can be in progress; starting another pauses the one started longest ago.`
           : 'Any number of tasks can be in progress.',
         'Call get_focus first to see what the user is working on. Only mark tasks done or change priorities when the user asked or clearly finished the work.',
+        'Working through tasks on your own: list_tasks with agent_state "ready" shows tasks the user handed to agents. claim_task one before you start (never start_task: that changes what the user is focused on), add_note as you go, then submit_for_review with a short summary. Don’t complete handed-off tasks: the user reviews and completes them. If you can’t finish, hand_back with the reason.',
+        'Notes can only be added to (add_note), never rewritten. Nothing can be deleted. The user can see and undo every change you make.',
         canWrite
           ? `Tasks you create are labelled as added by "${agentName(p)}".`
           : 'This connection is read-only.',
@@ -90,6 +102,8 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
       : {}),
     ...(t.status === 'in_progress' && t.startedAt ? { startedAt: t.startedAt } : {}),
     ...(t.completedAt ? { completedAt: t.completedAt } : {}),
+    ...(t.agentState ? { agentState: t.agentState } : {}),
+    ...(t.agentClaimedBy ? { claimedBy: t.agentClaimedBy.replace(/^token:/, '') } : {}),
     addedBy: t.source,
   });
 
@@ -100,12 +114,15 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     if (arg === undefined) return undefined;
     if (arg.trim().toLowerCase() === INBOX) return null;
     const projects = services.projects.list(p);
-    const hit = projects.find((x) => x.id === arg) ?? matchProject(arg, projects);
-    if (!hit) {
-      const known = ['Inbox', ...projects.map((x) => x.name)].join(', ');
-      throw invalid(`No project matches "${arg}". Projects: ${known}`);
+    const byId = projects.find((x) => x.id === arg);
+    if (byId) return byId.id;
+    const hits = projectCandidates(arg, projects);
+    if (hits.length === 1) return hits[0]!.id;
+    if (hits.length > 1) {
+      throw invalid(`"${arg}" could mean ${hits.map((x) => `"${x.name}"`).join(' or ')}. Use the full project name.`);
     }
-    return hit.id;
+    const known = ['Inbox', ...projects.map((x) => x.name)].join(', ');
+    throw invalid(`No project matches "${arg}". Projects: ${known}`);
   };
 
   const withSubtasks = (t: Task) => view(t, projectNames(), services.tasks.subtasks(p, t.id));
@@ -139,11 +156,15 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     {
       title: 'List open tasks',
       description:
-        'Open (not done) tasks with their subtasks, ordered by priority and then by the user’s own order. Filter by project, priority, status or text.',
+        'Open (not done) tasks with their subtasks, ordered by priority and then by the user’s own order. Filter by project, priority, status, agent hand-off state or text.',
       inputSchema: {
         project: ProjectArg.optional(),
         priority: PriorityArg.optional(),
         status: z.enum(['todo', 'in_progress']).optional(),
+        agent_state: z
+          .enum(AGENT_STATES)
+          .optional()
+          .describe('ready = handed to agents and free to claim, working = claimed, review = waiting for the user'),
         query: z.string().max(200).optional().describe('Case-insensitive text to find in titles and notes'),
       },
       annotations: READ,
@@ -159,6 +180,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           .filter((n) => projectId === undefined || n.projectId === projectId)
           .filter((n) => !args.priority || n.priority === args.priority)
           .filter((n) => !args.status || n.status === args.status)
+          .filter((n) => !args.agent_state || n.agentState === args.agent_state)
           .filter((n) => !q || `${n.title}\n${n.notes ?? ''}`.toLowerCase().includes(q))
           .sort((a, b) => rank(a.priority) - rank(b.priority))
           .map((n) => nodeView(n, names));
@@ -230,7 +252,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     {
       title: 'Add a task',
       description:
-        'Add a task, optionally with subtasks. Without a project it goes to the Inbox; without a priority it is "soon". Pass parent_task_id to add a single subtask to an existing task instead.',
+        'Add a task, optionally with subtasks. Without a project it goes to the Inbox; without a priority it is "soon". Pass parent_task_id to add a single subtask to an existing task instead. Refuses a title that is already open in the same place unless allow_duplicate is true.',
       inputSchema: {
         title: z.string().min(1).max(500),
         notes: z.string().max(10_000).optional(),
@@ -239,12 +261,32 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
         estimate_minutes: Minutes.optional(),
         parent_task_id: Id.optional().describe('Make this a subtask of that task (inherits its project)'),
         subtasks: z.array(z.string().min(1).max(500)).max(50).optional().describe('Titles of subtasks to add'),
+        for_agent: z.boolean().optional().describe('Hand it to agents straight away (agent_state "ready")'),
+        allow_duplicate: z.boolean().optional().describe('Add it even if an open task has the same title'),
       },
       annotations: WRITE,
     },
     (args) =>
       run(() => {
         const projectId = resolveProject(args.project);
+        if (!args.allow_duplicate) {
+          const same = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+          const twin = services.tasks
+            .board(p)
+            .find(
+              (t) =>
+                t.status !== 'done' &&
+                same(t.title) === same(args.title) &&
+                (args.parent_task_id
+                  ? t.parentTaskId === args.parent_task_id
+                  : !t.parentTaskId && t.projectId === (projectId ?? null)),
+            );
+          if (twin) {
+            throw invalid(
+              `An open task with this title already exists (id ${twin.id}). Update that one, or pass allow_duplicate: true.`,
+            );
+          }
+        }
         const task = services.tasks.create(p, {
           title: args.title,
           notes: args.notes,
@@ -253,6 +295,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           estimateMinutes: args.estimate_minutes,
           parentTaskId: args.parent_task_id,
           subtasks: args.subtasks?.map((title) => ({ title })),
+          agentState: args.for_agent ? 'ready' : undefined,
         });
         return withSubtasks(task);
       }),
@@ -262,11 +305,11 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     'update_task',
     {
       title: 'Edit a task',
-      description: 'Change a task’s title, notes, priority, estimate or project. Only the fields you pass change.',
+      description:
+        'Change a task’s title, priority, estimate or project. Only the fields you pass change. To write notes use add_note.',
       inputSchema: {
         id: TaskId,
         title: z.string().min(1).max(500).optional(),
-        notes: z.string().max(10_000).nullable().optional().describe('null clears the notes'),
         priority: PriorityArg.optional(),
         estimate_minutes: Minutes.nullable().optional().describe('null clears the estimate'),
         project: ProjectArg.optional().describe('Move to this project ("Inbox" for none); subtasks follow'),
@@ -278,7 +321,6 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
         const projectId = resolveProject(args.project);
         const task = services.tasks.update(p, args.id, {
           ...(args.title !== undefined ? { title: args.title } : {}),
-          ...(args.notes !== undefined ? { notes: args.notes } : {}),
           ...(args.priority !== undefined ? { priority: args.priority } : {}),
           ...(args.estimate_minutes !== undefined ? { estimateMinutes: args.estimate_minutes } : {}),
           ...(projectId !== undefined ? { projectId } : {}),
@@ -302,14 +344,14 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
   statusTool(
     'start_task',
     'Start a task',
-    'Mark a task as in progress, so it shows as the focus. Starting a subtask also starts its parent.',
+    'Mark a task as in progress, so it shows as the user’s focus (it may pause what they are doing). Only when the user asked. To work on a task yourself, use claim_task.',
     'start',
   );
   statusTool('pause_task', 'Pause a task', 'Move an in-progress task back to todo.', 'stop');
   statusTool(
     'complete_task',
     'Mark a task done',
-    'Mark a task done. Completing a task also completes its open subtasks. Only do this when the work is finished.',
+    'Mark a task done. Completing a task also completes its open subtasks. Only when the user asked or the work is finished. Tasks handed to agents can’t be completed by agents: use submit_for_review.',
     'complete',
   );
   statusTool('reopen_task', 'Reopen a task', 'Put a done task back to todo.', 'reopen');
@@ -340,6 +382,71 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
         });
         return withSubtasks(task);
       }),
+  );
+
+  // ---------- Notes and hand-off ----------
+
+  server.registerTool(
+    'add_note',
+    {
+      title: 'Add to a task’s notes',
+      description:
+        'Add a paragraph below the task’s notes, signed with your name and the date: progress, findings, links, questions. Existing notes are never changed.',
+      inputSchema: { id: TaskId, text: Note },
+      annotations: WRITE,
+    },
+    ({ id, text: note }) => run(() => withSubtasks(services.tasks.appendNote(p, id, { text: note }))),
+  );
+
+  const agentTool = (
+    name: string,
+    title: string,
+    description: string,
+    state: 'ready' | 'working' | 'review' | null,
+    note: 'required' | 'optional' | 'none',
+  ) =>
+    server.registerTool(
+      name,
+      {
+        title,
+        description,
+        inputSchema: {
+          id: TaskId,
+          ...(note === 'required' ? { note: Note } : note === 'optional' ? { note: Note.optional() } : {}),
+        },
+        annotations: { ...WRITE, idempotentHint: true },
+      },
+      (args: { id: string; note?: string }) =>
+        run(() => withSubtasks(services.tasks.setAgentState(p, args.id, { state, note: args.note }))),
+    );
+
+  agentTool(
+    'mark_for_agent',
+    'Hand a task to agents',
+    'Mark a task as one an AI agent can do (agent_state "ready"), e.g. when sorting the Inbox. Add why in note if useful.',
+    'ready',
+    'optional',
+  );
+  agentTool(
+    'claim_task',
+    'Claim a task to work on',
+    'Take a task marked "ready" before working on it, so no other agent picks it up. Doesn’t change the user’s focus.',
+    'working',
+    'none',
+  );
+  agentTool(
+    'submit_for_review',
+    'Hand in finished work',
+    'Say a claimed task is finished. note: what you did and where to look (branch, PR, files). The user reviews and completes it.',
+    'review',
+    'required',
+  );
+  agentTool(
+    'hand_back',
+    'Give a task back',
+    'Release a claimed task you can’t finish, back to "ready" for another try. note: why, and what you found.',
+    'ready',
+    'required',
   );
 
   return server;

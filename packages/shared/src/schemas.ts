@@ -10,6 +10,14 @@ export const TASK_STATUSES = ['todo', 'in_progress', 'done'] as const;
 export const TaskStatus = z.enum(TASK_STATUSES);
 export type TaskStatus = z.infer<typeof TaskStatus>;
 
+/**
+ * Handing a task to an AI agent: `ready` = an agent may pick it up, `working` = an agent claimed
+ * it, `review` = the agent says it's finished and waits for the owner to check and complete it.
+ */
+export const AGENT_STATES = ['ready', 'working', 'review'] as const;
+export const AgentState = z.enum(AGENT_STATES);
+export type AgentState = z.infer<typeof AgentState>;
+
 /** `manual`, `voice`, or `ai:<agent>` (agent = short slug). */
 export const TaskSource = z
   .string()
@@ -37,6 +45,10 @@ export const Task = z.object({
   startedAt: z.string().nullable(),
   completedAt: z.string().nullable(),
   deletedAt: z.string().nullable(),
+  /** null = not handed to an agent. */
+  agentState: AgentState.nullable(),
+  /** Who claimed it (`token:<name>`, `owner`, ...), while `working` or `review`. */
+  agentClaimedBy: z.string().nullable(),
 });
 export type Task = z.infer<typeof Task>;
 
@@ -68,6 +80,8 @@ export const CreateTaskInput = z.object({
   estimateMinutes: Estimate.optional(),
   parentTaskId: Id.nullable().optional(),
   source: TaskSource.optional(),
+  /** Let an agent pick it up straight away. */
+  agentState: z.literal('ready').nullable().optional(),
   /** Create subtasks in the same step (same transaction). */
   subtasks: z
     .array(z.object({ title: Title, estimateMinutes: Estimate.optional() }))
@@ -84,6 +98,7 @@ export const UpdateTaskInput = z
     priority: Priority,
     estimateMinutes: Estimate,
     status: TaskStatus,
+    agentState: AgentState.nullable(),
   })
   .partial()
   .strict();
@@ -102,6 +117,19 @@ export const MoveTaskInput = z
   })
   .strict();
 export type MoveTaskInput = z.input<typeof MoveTaskInput>;
+
+/** Add to a task's notes without touching what's there (how agents write notes). */
+export const AppendNoteInput = z.object({ text: z.string().trim().min(1, 'text is required').max(5000) }).strict();
+export type AppendNoteInput = z.input<typeof AppendNoteInput>;
+
+/** Hand a task to agents, claim it, hand it back or send it for review. `note` is appended. */
+export const SetAgentStateInput = z
+  .object({
+    state: AgentState.nullable(),
+    note: z.string().trim().min(1).max(5000).optional(),
+  })
+  .strict();
+export type SetAgentStateInput = z.input<typeof SetAgentStateInput>;
 
 /** A short emoji (a few code points, e.g. flags or skin tones), not text. */
 export const ProjectIcon = z.string().trim().min(1).max(16);
@@ -227,6 +255,8 @@ export interface TaskSuggestion {
   projectId: string | null;
   /** A project name that was heard but doesn't exist yet. */
   unmatchedProject: string | null;
+  /** The heard name fits several projects; the user picks one (projectId stays null). */
+  projectChoices: { id: string; name: string }[];
   /** null = not said. */
   priority: Priority | null;
   estimateMinutes: number | null;
@@ -322,6 +352,48 @@ export type ChatStreamEvent =
   | { type: 'error'; message: string }
   | { type: 'done' };
 
+// ---------- Activity ----------
+
+export const ActivityQuery = z.object({
+  /** `agents` = everything not done by the owner directly (tokens and the assistant). */
+  who: z.enum(['all', 'agents']).optional(),
+  taskId: Id.optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  /** `nextCursor` from the previous page. */
+  cursor: z.coerce.number().int().min(1).optional(),
+});
+export type ActivityQuery = z.input<typeof ActivityQuery>;
+
+/** One change to a task or project, with the state before it (null = it was created). */
+export interface ActivityChange {
+  eventId: number;
+  entity: 'task' | 'project';
+  entityId: string;
+  action: string;
+  before: Task | Project | null;
+  after: Task | Project;
+}
+
+/** Everything one request changed, e.g. completing a task and its subtasks. */
+export interface ActivityEntry {
+  batchId: string;
+  at: string;
+  /** `owner`, `ai:assistant` or `token:<name>` */
+  actor: string;
+  changes: ActivityChange[];
+  /** Why it can't be undone, or null when it can. */
+  cantUndo: string | null;
+  /** Set when a later entry undid this one. */
+  undoneAt: string | null;
+  /** This entry undid that batch. */
+  undoOf: string | null;
+}
+
+export interface ActivityPage {
+  entries: ActivityEntry[];
+  nextCursor: number | null;
+}
+
 // ---------- Timer ----------
 
 export const TIMER_STATUSES = ['running', 'paused', 'finished'] as const;
@@ -375,7 +447,7 @@ export interface HelmEvent {
   actor: string;
   entity: EventEntity;
   entityId: string;
-  /** created | updated | moved | started | stopped | completed | reopened | deleted | archived */
+  /** created | updated | moved | started | stopped | completed | reopened | deleted | archived | restored | agent | noted */
   action: string;
   /** Full snapshot of the entity after the change. Token events reach the owner only. */
   data: Task | Project | ApiToken | Timer;
