@@ -644,14 +644,18 @@ function ProjectPicker({
   const rowRef = useRef<HTMLDivElement>(null);
   // Keep the picked project in view (the row scrolls sideways on a phone), also when #shorthand
   // in the title picks one.
+  // A frame later: on open the dialog isn't laid out yet when this runs.
   useEffect(() => {
-    const row = rowRef.current;
-    const on = row?.querySelector<HTMLElement>('input:checked')?.parentElement;
-    if (!row || !on) return;
-    const pad = 24;
-    if (on.offsetLeft - pad < row.scrollLeft) row.scrollLeft = on.offsetLeft - pad;
-    else if (on.offsetLeft + on.offsetWidth + pad > row.scrollLeft + row.clientWidth)
-      row.scrollLeft = on.offsetLeft + on.offsetWidth + pad - row.clientWidth;
+    const frame = requestAnimationFrame(() => {
+      const row = rowRef.current;
+      const on = row?.querySelector<HTMLElement>('input:checked')?.parentElement;
+      if (!row || !on) return;
+      const pad = 24;
+      if (on.offsetLeft - pad < row.scrollLeft) row.scrollLeft = on.offsetLeft - pad;
+      else if (on.offsetLeft + on.offsetWidth + pad > row.scrollLeft + row.clientWidth)
+        row.scrollLeft = on.offsetLeft + on.offsetWidth + pad - row.clientWidth;
+    });
+    return () => cancelAnimationFrame(frame);
   }, [value]);
   const options = [
     { id: null, name: 'Inbox', color: null, icon: projectIcon(null) },
