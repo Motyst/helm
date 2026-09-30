@@ -90,6 +90,24 @@
   .editor-foot.is-new {
     display: none;
   }
+  /* Add subtask stays pinned just above the keyboard, so rows can be added one after another.
+     The footer (Delete) scrolls instead, and focused fields keep clear of both sticky bars. */
+  .editor {
+    scroll-padding: 4rem 0 4rem;
+  }
+  .editor-extras {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: -0.25rem -1.5rem 0;
+    padding: 0.35rem 1.5rem;
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+    background: var(--water);
+    border-top: 1px solid var(--contour-faint);
+  }
+  .editor-foot {
+    position: static;
+  }
 }
 .editor-parent {
   margin-top: -0.75rem;
