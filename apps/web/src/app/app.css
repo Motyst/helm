@@ -31,10 +31,12 @@
 .nav a {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
-  padding: 0 0.85rem;
+  /* As tall as the round buttons beside it, so the bar keeps its height. */
+  min-height: 44px;
+  padding: 0 0.95rem;
   border-radius: var(--radius-control);
   color: var(--ink-soft);
+  font-size: 1.125rem;
   font-weight: 700;
   text-decoration: none;
 }
@@ -160,7 +162,11 @@
     gap: 0;
   }
   .nav a {
-    padding: 0 0.6rem;
+    padding: 0 0.45rem;
+  }
+  /* Room for the bigger tabs; the floating voice button keeps its size. */
+  .topbar-end > .topbar-icon:not(.voice-btn) {
+    width: 40px;
   }
   /* Round + button; the hidden label stays as its accessible name. */
   .topbar-add {
@@ -192,6 +198,11 @@
 @media (max-width: 420px) {
   .topbar .wordmark {
     display: none;
+  }
+}
+@media (max-width: 360px) {
+  .nav a {
+    font-size: 1rem;
   }
 }
 
