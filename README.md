@@ -30,8 +30,8 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 - **Seven themes**, each with a woodblock-print landscape.
 
 <p>
-  <img src="docs/screenshots/phone-focus-queue.png" width="250" alt="Focus and the timer on a phone">
-  <img src="docs/screenshots/phone-board.png" width="250" alt="Board on a phone">
+  <img src="docs/screenshots/phone-focus.png" width="250" alt="Focus on a phone: the task in progress, its next step and the timer">
+  <img src="docs/screenshots/phone-board.png" width="250" alt="Board on a phone, with a tab per project">
   <img src="docs/screenshots/phone-voice-review.png" width="250" alt="A task drafted by voice">
 </p>
 
