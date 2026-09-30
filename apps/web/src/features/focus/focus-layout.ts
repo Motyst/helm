@@ -2,7 +2,6 @@ import { useSyncExternalStore } from 'react';
 
 /** How the Focus view is laid out, per device (like the theme). */
 export const FOCUS_LAYOUTS = [
-  { id: 'classic', name: 'Classic', hint: 'The task in progress with its subtasks, the timer, and everything on Now.' },
   { id: 'one', name: 'One thing', hint: 'Only the task in progress and its next step. Big buttons at the bottom.' },
   { id: 'vital', name: 'Vital three', hint: 'The three tasks that matter most, numbered. The rest is folded away.' },
   { id: 'compass', name: 'Compass', hint: 'A countdown ring, the task and three round buttons. Nothing else.' },
@@ -16,9 +15,9 @@ const listeners = new Set<() => void>();
 function saved(): FocusLayout {
   try {
     const v = localStorage.getItem(KEY);
-    return FOCUS_LAYOUTS.some((l) => l.id === v) ? (v as FocusLayout) : 'classic';
+    return FOCUS_LAYOUTS.some((l) => l.id === v) ? (v as FocusLayout) : 'one';
   } catch {
-    return 'classic';
+    return 'one';
   }
 }
 

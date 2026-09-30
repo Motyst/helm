@@ -13,8 +13,8 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 
 - **Tasks** with notes, subtasks, an estimate and a priority: **Now**, **Soon** or **Someday**.
   One task is in progress at a time.
-- **Focus**: the task you're on, time spent vs. the estimate, and what's next. Three quieter
-  layouts in Settings.
+- **Focus**: the task you're on, time spent vs. the estimate, and what's next, in one of three
+  layouts (One thing, Vital three, Compass).
 - **Timer** that runs on the server, so every device shows the same countdown, with a push
   notification when it ends.
 - **Board** with one panel per project; drag tasks between projects and priorities.

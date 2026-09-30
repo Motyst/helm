@@ -199,16 +199,24 @@
   border-color: var(--accent);
 }
 
-/* Round check, like a buoy mark. */
+/* Round check, like a buoy mark. Drawn bigger than the room it takes (negative margins), so the
+   card keeps its size; the invisible ::after widens the tap target further. */
 .card-check {
+  position: relative;
   flex: none;
-  width: 1.35rem;
-  height: 1.35rem;
-  margin-top: 0.1rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.1rem -0.2rem -0.3rem;
   border-radius: 50%;
   border: 2px solid var(--contour);
   background: transparent;
   padding: 0;
+}
+.card-check::after {
+  content: '';
+  position: absolute;
+  inset: -0.4rem;
+  border-radius: 50%;
 }
 .card-check:hover {
   border-color: var(--ink);

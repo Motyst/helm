@@ -4,6 +4,7 @@ import { PRIORITIES, parseQuickAdd, projectCandidates, type Priority, type Task 
 import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
 import { upsertTask, useCreateProject, useProjects, useSetAgentState, useTaskAction, useTasks } from '../../lib/queries.ts';
+import { focusWithKeyboard } from '../../lib/keyboard.ts';
 import { hrefFor } from '../../lib/route.ts';
 import { LineInput } from '../../ui/LineInput.tsx';
 import { agentName } from '../board/agent-badge.ts';
@@ -93,7 +94,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   useEffect(() => {
     const d = dialogRef.current;
     if (d && !d.open) d.showModal();
-    titleRef.current?.focus();
+    focusWithKeyboard(titleRef.current);
   }, []);
 
   // Tell the parent directly; the native `close` event (kept for Escape) can arrive late or not at
