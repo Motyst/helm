@@ -11,8 +11,11 @@ import { createFromDraft, draftFrom, draftFromSuggestion, saveDraft, type Subtas
 import './editor.css';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
-const ESTIMATES = [15, 30, 45, 60, 90, 120];
+const ESTIMATES = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240];
 const NEW_PROJECT = '__new__';
+const OTHER = '__other__';
+/** Transcripts longer than this are cut to two lines until expanded. */
+const LONG_TRANSCRIPT = 120;
 
 let keySeq = 0;
 const newSub = (): SubtaskDraft => ({ key: `new-${++keySeq}`, title: '', done: false });
@@ -32,7 +35,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   const tasks = useTasks();
   const projects = useProjects();
   const createProject = useCreateProject();
-  const ids = { title: useId(), notes: useId(), project: useId(), estimate: useId() };
+  const ids = { title: useId(), notes: useId(), project: useId(), estimate: useId(), priority: useId() };
 
   const editing: Task | undefined =
     target.mode === 'edit' ? tasks.data?.find((t) => t.id === target.taskId && !t.deletedAt) : undefined;
@@ -70,6 +73,8 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   );
   const [newProjectName, setNewProjectName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [customEstimate, setCustomEstimate] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Subtask row to focus after the next render (set when rows are added/removed by keyboard).
@@ -245,9 +250,22 @@ export function TaskDialog({ target, queued, onClose }: Props) {
         {parent && <p className="editor-parent">Part of {parent.title}</p>}
         {voice && (
           <div className="editor-voice">
-            <p>
-              <span className="editor-voice-label">You said</span> <q>{voice.transcript}</q>
-            </p>
+            {voice.transcript.length > LONG_TRANSCRIPT ? (
+              // Long recordings show two lines; tap to read it all.
+              <button
+                type="button"
+                className={`editor-voice-said${transcriptOpen ? '' : ' is-clamped'}`}
+                aria-expanded={transcriptOpen}
+                title={transcriptOpen ? undefined : 'Show all'}
+                onClick={() => setTranscriptOpen((o) => !o)}
+              >
+                <span className="editor-voice-label">You said</span> <q>{voice.transcript}</q>
+              </button>
+            ) : (
+              <p>
+                <span className="editor-voice-label">You said</span> <q>{voice.transcript}</q>
+              </p>
+            )}
             {voice.notice ? (
               <p className="editor-voice-note">{voice.notice}</p>
             ) : (
@@ -367,148 +385,154 @@ export function TaskDialog({ target, queued, onClose }: Props) {
             </div>
           )}
 
-          <fieldset className="field">
-            <legend>Priority</legend>
-            <div className="segmented">
-              {PRIORITIES.map((p) => (
-                <label key={p} className={`seg seg-${p}`}>
-                  <input
-                    type="radio"
-                    name="priority"
-                    value={p}
-                    checked={draft.priority === p}
-                    onChange={() => set('priority', p)}
-                  />
-                  <span>{PRIORITY_LABEL[p]}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <div className="field">
+            <label htmlFor={ids.estimate}>Estimate</label>
+            {customEstimate ? (
+              <span className="estimate-custom">
+                <input
+                  id={ids.estimate}
+                  autoComplete="off"
+                  autoFocus
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={1440}
+                  placeholder="Minutes"
+                  value={draft.estimateMinutes ?? ''}
+                  onChange={(e) => {
+                    const n = Number.parseInt(e.target.value, 10);
+                    set('estimateMinutes', Number.isFinite(n) && n > 0 ? Math.min(n, 1440) : null);
+                  }}
+                  onBlur={() => setCustomEstimate(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setCustomEstimate(false);
+                    }
+                  }}
+                />
+                <span aria-hidden="true">min</span>
+              </span>
+            ) : (
+              <select
+                id={ids.estimate}
+                value={draft.estimateMinutes ?? ''}
+                onChange={(e) => {
+                  if (e.target.value === OTHER) setCustomEstimate(true);
+                  else set('estimateMinutes', e.target.value ? Number(e.target.value) : null);
+                }}
+              >
+                <option value="">None</option>
+                {ESTIMATES.map((m) => (
+                  <option key={m} value={m}>
+                    {formatMinutes(m)}
+                  </option>
+                ))}
+                {estimateIsCustom && <option value={draft.estimateMinutes!}>{formatMinutes(draft.estimateMinutes!)}</option>}
+                <option value={OTHER}>Other…</option>
+              </select>
+            )}
+          </div>
         </div>
 
-        <fieldset className="field">
-          <legend>Estimate</legend>
-          <div className="chips">
-            <label className="chip">
-              <input
-                type="radio"
-                name="estimate"
-                checked={draft.estimateMinutes === null}
-                onChange={() => set('estimateMinutes', null)}
-              />
-              <span>None</span>
-            </label>
-            {ESTIMATES.map((m) => (
-              <label key={m} className="chip">
+        <div className="field editor-inline" role="radiogroup" aria-labelledby={ids.priority}>
+          <span id={ids.priority} className="editor-inline-label">
+            Priority
+          </span>
+          <div className="segmented">
+            {PRIORITIES.map((p) => (
+              <label key={p} className={`seg seg-${p}`}>
                 <input
                   type="radio"
-                  name="estimate"
-                  checked={draft.estimateMinutes === m}
-                  onChange={() => set('estimateMinutes', m)}
+                  name="priority"
+                  value={p}
+                  checked={draft.priority === p}
+                  onChange={() => set('priority', p)}
                 />
-                <span>{formatMinutes(m)}</span>
+                <span>{PRIORITY_LABEL[p]}</span>
               </label>
             ))}
-            <span className={`chip-input ${estimateIsCustom ? 'is-on' : ''}`}>
-              <label htmlFor={ids.estimate} className="visually-hidden">
-                Estimate in minutes
-              </label>
-              <input
-                id={ids.estimate}
-                autoComplete="off"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={1440}
-                placeholder="Other"
-                value={estimateIsCustom ? String(draft.estimateMinutes) : ''}
-                onChange={(e) => {
-                  const n = Number.parseInt(e.target.value, 10);
-                  set('estimateMinutes', Number.isFinite(n) && n > 0 ? Math.min(n, 1440) : null);
-                }}
-              />
-              <span aria-hidden="true">min</span>
-            </span>
           </div>
-        </fieldset>
-
-        {!isSubtask && (
-          <fieldset className="field">
-            <legend>Subtasks</legend>
-            {draft.subtasks.length > 0 && (
-              <ul className="sub-list">
-                {draft.subtasks.map((s) => (
-                  <li key={s.key} className="sub-row">
-                    <input
-                      type="checkbox"
-                      checked={s.done}
-                      aria-label={`Done: ${s.title || 'new subtask'}`}
-                      onChange={(e) => updateSub(s.key, { done: e.target.checked })}
-                    />
-                    <input
-                      id={`sub-${s.key}`}
-                      autoComplete="off"
-                      className={s.done ? 'is-done' : undefined}
-                      value={s.title}
-                      placeholder="Subtask"
-                      aria-label="Subtask title"
-                      maxLength={500}
-                      onChange={(e) => updateSub(s.key, { title: e.target.value })}
-                      onKeyDown={(e) => onSubKeyDown(e, s)}
-                    />
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      aria-label={`Remove ${s.title || 'subtask'}`}
-                      onClick={() =>
-                        set(
-                          'subtasks',
-                          draft.subtasks.filter((x) => x.key !== s.key),
-                        )
-                      }
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button type="button" className="link-btn" onClick={() => addSubAfter()}>
-              Add subtask
-            </button>
-          </fieldset>
-        )}
-
-        {!isSubtask &&
-          (editing && (editing.agentState === 'working' || editing.agentState === 'review') ? (
-            <AgentStatus
-              task={editing}
-              onChange={(ready) => set('agentReady', ready)}
-              onCompleted={() => close()}
-            />
-          ) : (
-            <label className="editor-agent">
-              <input type="checkbox" checked={draft.agentReady} onChange={(e) => set('agentReady', e.target.checked)} />
-              <span>
-                <strong>An agent can do this</strong>
-                <span className="field-hint">
-                  Agents connected to Helm may claim it, work on it and hand it back for you to review.
-                </span>
-              </span>
-            </label>
-          ))}
+        </div>
 
         <div className="field">
-          <label htmlFor={ids.notes}>Notes</label>
+          <label htmlFor={ids.notes} className="visually-hidden">
+            Notes
+          </label>
           <textarea
             id={ids.notes}
             autoComplete="off"
-            rows={3}
+            placeholder="Notes"
+            rows={2}
             value={draft.notes}
             onChange={(e) => set('notes', e.target.value)}
             maxLength={20000}
           />
         </div>
+
+        {!isSubtask && draft.subtasks.length > 0 && (
+          <ul className="sub-list" aria-label="Subtasks">
+            {draft.subtasks.map((s) => (
+              <li key={s.key} className="sub-row">
+                <input
+                  type="checkbox"
+                  checked={s.done}
+                  aria-label={`Done: ${s.title || 'new subtask'}`}
+                  onChange={(e) => updateSub(s.key, { done: e.target.checked })}
+                />
+                <input
+                  id={`sub-${s.key}`}
+                  autoComplete="off"
+                  className={s.done ? 'is-done' : undefined}
+                  value={s.title}
+                  placeholder="Subtask"
+                  aria-label="Subtask title"
+                  maxLength={500}
+                  onChange={(e) => updateSub(s.key, { title: e.target.value })}
+                  onKeyDown={(e) => onSubKeyDown(e, s)}
+                />
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label={`Remove ${s.title || 'subtask'}`}
+                  onClick={() =>
+                    set(
+                      'subtasks',
+                      draft.subtasks.filter((x) => x.key !== s.key),
+                    )
+                  }
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {!isSubtask && editing && (editing.agentState === 'working' || editing.agentState === 'review') && (
+          <AgentStatus task={editing} onChange={(ready) => set('agentReady', ready)} onCompleted={() => close()} />
+        )}
+
+        {!isSubtask && (
+          <div className="editor-extras">
+            <button type="button" className="link-btn" onClick={() => addSubAfter()}>
+              Add subtask
+            </button>
+            {!(editing && (editing.agentState === 'working' || editing.agentState === 'review')) && (
+              <label
+                className="editor-agent"
+                title="Agents connected to Helm may claim it, work on it and hand it back for you to review."
+              >
+                <input
+                  type="checkbox"
+                  checked={draft.agentReady}
+                  onChange={(e) => set('agentReady', e.target.checked)}
+                />
+                <span>An agent can do this</span>
+              </label>
+            )}
+          </div>
+        )}
 
         {error && (
           <p className="editor-error" role="alert">

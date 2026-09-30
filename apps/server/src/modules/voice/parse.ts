@@ -19,6 +19,8 @@ type ModelTask = z.output<typeof ModelAnswer>['tasks'][number];
 
 const MAX_TASKS = 10;
 const MAX_SUBTASKS = 50;
+/** Titles are asked for at up to 60 characters; anything past this is cut and kept in the notes. */
+export const TITLE_MAX = 80;
 
 export interface DraftOptions {
   now: Date;
@@ -66,10 +68,13 @@ export async function draftTasks(
   return { tasks: tasks.length ? tasks : [plain(transcript)], parsed: true };
 }
 
+/** No model: the start of what was said is the title, and a long recording is kept whole in the notes. */
 function plain(transcript: string): TaskSuggestion {
+  const said = oneLine(transcript);
+  const title = said.length <= TITLE_MAX ? said : shorten(said.split(/(?<=[.!?])\s/)[0]!);
   return {
-    title: oneLine(transcript).slice(0, 500),
-    notes: null,
+    title,
+    notes: title === said ? null : said.slice(0, 20_000),
     projectId: null,
     unmatchedProject: null,
     projectChoices: [],
@@ -81,9 +86,20 @@ function plain(transcript: string): TaskSuggestion {
 
 const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
 
+/** Cut to TITLE_MAX at a word boundary. */
+export function shorten(s: string): string {
+  if (s.length <= TITLE_MAX) return s;
+  const cut = s.slice(0, TITLE_MAX - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '')}…`;
+}
+
 export function clean(t: ModelTask, projects: NamedProject[]): TaskSuggestion | null {
-  const title = oneLine(t.title).slice(0, 500);
-  if (!title) return null;
+  const full = oneLine(t.title);
+  if (!full) return null;
+  const title = shorten(full);
+  // A title that ran long isn't lost: it opens the notes.
+  const notes = [title === full ? '' : full, t.notes?.trim() ?? ''].filter(Boolean).join('\n\n');
 
   let projectId: string | null = null;
   let unmatchedProject: string | null = null;
@@ -100,7 +116,7 @@ export function clean(t: ModelTask, projects: NamedProject[]): TaskSuggestion | 
   const est = t.estimateMinutes;
   return {
     title,
-    notes: t.notes?.trim() ? t.notes.trim().slice(0, 20_000) : null,
+    notes: notes ? notes.slice(0, 20_000) : null,
     projectId,
     unmatchedProject,
     projectChoices,
@@ -131,13 +147,15 @@ export function systemPrompt(projects: NamedProject[], o: DraftOptions): string 
 
 Return one entry per separate to-do. Most notes are a single task. Steps of one piece of work are subtasks of that task, not separate tasks.
 
+Be concise. People ramble when they talk; the board needs the gist. The longer the note, the harder you condense.
+
 For each task:
-- title: short and imperative, under 80 characters, in the language the note was spoken in. Drop filler such as "um", "I need to", "remind me to", "add a task".
-- notes: details that don't fit the title (who, where, context, deadlines). Write dates as the weekday and date, e.g. "Due Friday 26 September". Don't repeat what the other fields already hold (project, priority, estimate). null when there's nothing left to add. Never invent details.
+- title: imperative, 3 to 8 words, at most 60 characters, in the language the note was spoken in. Name the outcome, not the whole story ("Add platform links to social profiles", not "Add a link on each social media profile that is specific to that platform"). Drop filler such as "um", "I need to", "remind me to", "add a task".
+- notes: only details needed to do the task that don't fit the title (who, where, deadlines, specifics), as a short phrase or a few "- " points. Summarise, don't transcribe; drop repetition and thinking aloud. Write dates as the weekday and date, e.g. "Due Friday 26 September". Don't repeat what the title or other fields already hold (project, priority, estimate). null when there's nothing left to add. Never invent details.
 - project: one of the project names below when the note says or clearly means it. "Inbox" if the note says inbox. A new name only when the speaker names a project that isn't listed. Otherwise null.
 - priority: "now" for urgent, today, right away or ASAP. "soon" for this week or soon. "someday" for eventually, one day or no rush. null if not said.
 - estimateMinutes: only when a duration is said ("half an hour" is 30). Otherwise null.
-- subtasks: the steps the speaker lists for this task, short. Otherwise an empty list.
+- subtasks: the steps the speaker lists for this task, a few words each. Otherwise an empty list.
 
 Today is ${today(o)}.
 

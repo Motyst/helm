@@ -5,7 +5,7 @@ import type { z } from 'zod';
 import { createApp } from '../src/app.ts';
 import { OWNER } from '../src/core/auth/principal.ts';
 import { voiceModule } from '../src/modules/voice/index.ts';
-import { systemPrompt } from '../src/modules/voice/parse.ts';
+import { clean, shorten, systemPrompt, TITLE_MAX } from '../src/modules/voice/parse.ts';
 import { setup, testConfig } from './helpers.ts';
 
 type ErrorBody = { error: { code: string; message: string } };
@@ -169,6 +169,14 @@ describe('voice parse', () => {
     expect(body).toMatchObject({ parsed: false, tasks: [{ title: 'call the bank', priority: null, subtasks: [] }] });
   });
 
+  it('keeps a long recording out of the title without a model', async () => {
+    const { sendText } = await makeApp();
+    const said =
+      'Call the bank about the mortgage. Ask whether we can move the payment date to the fifth, and whether the fee goes away if we do it before October.';
+    const [t] = ((await (await sendText(said)).json()) as VoiceParseResult).tasks;
+    expect(t).toMatchObject({ title: 'Call the bank about the mortgage.', notes: said });
+  });
+
   it('falls back to the transcript when the model finds no task', async () => {
     const { sendText } = await makeApp({ llm: fakeLlm({ tasks: [] }).llm });
     const body = (await (await sendText('hmm')).json()) as VoiceParseResult;
@@ -256,5 +264,26 @@ describe('voice prompt', () => {
     expect(systemPrompt([], { now, timeZone: 'Europe/Riga' })).toContain('Today is Friday, 25 September 2026.');
     expect(systemPrompt([], { now, timeZone: 'America/New_York' })).toContain('Today is Thursday, 24 September 2026.');
     expect(systemPrompt([], { now, timeZone: 'Not/AZone' })).toContain('(none yet)');
+  });
+});
+
+describe('concise drafts', () => {
+  it('cuts long titles at a word and keeps the rest in the notes', () => {
+    const long = 'Add a link on each social media profile that is specific to that platform so people land on the right page';
+    expect(shorten('Short one')).toBe('Short one');
+    const cut = shorten(long);
+    expect(cut.length).toBeLessThanOrEqual(TITLE_MAX);
+    expect(cut).toMatch(/^Add a link on each social media profile .*\S…$/);
+
+    const t = clean(task({ title: long, notes: 'Instagram first' }), [])!;
+    expect(t.title).toBe(cut);
+    expect(t.notes).toBe(`${long}\n\nInstagram first`);
+    expect(clean(task({ title: 'Fix gutter', notes: '  ' }), [])!.notes).toBeNull();
+  });
+
+  it('asks the model to condense', () => {
+    const prompt = systemPrompt([], { now: new Date('2026-09-29T10:00:00Z') });
+    expect(prompt).toContain('3 to 8 words, at most 60 characters');
+    expect(prompt).toContain("Summarise, don't transcribe");
   });
 });
