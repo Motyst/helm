@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { computeFocus, type Task, type TaskNode } from '@helm/shared';
+import { buildTree, computeFocus, type Task, type TaskNode } from '@helm/shared';
 import { clockTime, formatMinutes, minutesSince } from '../../lib/format.ts';
 import { useProjects, useTaskAction, useTasks } from '../../lib/queries.ts';
 import { useCompleteTask } from '../../lib/useCompleteTask.ts';
@@ -7,6 +7,8 @@ import { ProjectLabel, type ProjectMap } from '../../ui/ProjectLabel.tsx';
 import { useEditor } from '../task-editor/EditorContext.tsx';
 import { TimerCard } from '../timer/TimerCard.tsx';
 import { CourseLine } from './CourseLine.tsx';
+import { useFocusLayout } from './focus-layout.ts';
+import { FocusCompass, FocusOne, FocusVital, type LayoutProps } from './FocusLayouts.tsx';
 import './focus.css';
 
 function useNow(intervalMs: number): number {
@@ -25,8 +27,13 @@ export function FocusView() {
   const editor = useEditor();
   const complete = useCompleteTask();
   const now = useNow(30_000);
+  const layout = useFocusLayout();
 
   const focus = useMemo(() => computeFocus(tasks.data ?? []), [tasks.data]);
+  const openCount = useMemo(
+    () => buildTree(tasks.data ?? []).filter((t) => t.status !== 'done').length,
+    [tasks.data],
+  );
   const projectMap: ProjectMap = useMemo(() => new Map((projects.data ?? []).map((p) => [p.id, p])), [projects.data]);
 
   if (tasks.isPending) return <main className="focus" aria-busy="true" />;
@@ -42,6 +49,22 @@ export function FocusView() {
   const { current, upNext } = focus;
   const queue = focus.now;
   const queueMinutes = queue.reduce((sum, t) => sum + (t.estimateMinutes ?? 0), 0);
+
+  if (layout !== 'classic') {
+    const props: LayoutProps = {
+      focus,
+      projects: projectMap,
+      now,
+      openCount,
+      run,
+      onEdit: (id) => editor.openEdit(id),
+      onComplete: (t) => void complete(t),
+      onAdd: () => editor.openCreate({ priority: 'now' }),
+    };
+    if (layout === 'one') return <FocusOne {...props} />;
+    if (layout === 'vital') return <FocusVital {...props} />;
+    return <FocusCompass {...props} />;
+  }
 
   return (
     <main className={`focus ${current ? 'is-working' : ''}`}>

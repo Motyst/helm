@@ -32,6 +32,11 @@ over) beside it, a course line against the estimate that turns to the accent col
 over, and the subtasks in their own panel. Beside it on a wide screen (below it on a phone): a
 countdown timer, what's up next, and the rest of Now, each with a Start button.
 
+Settings → Focus layout swaps this for a quieter layout, per device: **One thing** (only the task
+in progress, its next step and big buttons at the bottom), **Vital three** (the three tasks that
+matter most, numbered, the rest folded into one link) or **Compass** (a countdown ring, the task
+and three round buttons).
+
 ### Timer
 
 <p>

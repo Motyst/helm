@@ -8,6 +8,7 @@ import '../task-editor/editor.css';
 import './settings.css';
 import { AlertsSection } from './AlertsSection.tsx';
 import { ThemeSection } from './ThemePicker.tsx';
+import { FOCUS_LAYOUTS, setFocusLayout, useFocusLayout } from '../focus/focus-layout.ts';
 
 const ACCESS: { value: TokenScope; label: string; hint: string }[] = [
   { value: 'read', label: 'Read only', hint: 'Sees tasks, projects and the done log.' },
@@ -44,6 +45,8 @@ export function SettingsView() {
       <TokenList />
 
       <ThemeSection />
+
+      <FocusLayoutSection />
 
       <AlertsSection />
 
@@ -356,6 +359,31 @@ function TokenRow({ token, projects, now }: { token: ApiToken; projects: Map<str
         </button>
       )}
     </li>
+  );
+}
+
+// ---------- Focus layout ----------
+
+function FocusLayoutSection() {
+  const layout = useFocusLayout();
+  return (
+    <section className="settings-section" aria-labelledby="focus-layout-heading">
+      <h2 id="focus-layout-heading" className="settings-subtitle">
+        Focus layout
+      </h2>
+      <p className="field-hint">How the Focus view looks on this device.</p>
+      <div className="choice-list" role="radiogroup" aria-labelledby="focus-layout-heading">
+        {FOCUS_LAYOUTS.map((l) => (
+          <label key={l.id} className="choice">
+            <input type="radio" name="focus-layout" checked={layout === l.id} onChange={() => setFocusLayout(l.id)} />
+            <span>
+              <strong>{l.name}</strong>
+              <span className="choice-hint">{l.hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </section>
   );
 }
 

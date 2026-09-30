@@ -31,6 +31,8 @@ const NAV: { route: Route; label: string; key: string }[] = [
   { route: 'done', label: 'Done', key: 'd' },
 ];
 
+const LAUNCH_KEY = 'helm.launchAction';
+
 function isTyping(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
@@ -100,12 +102,36 @@ function Shell({ sync }: { sync: SyncState }) {
   useMutationErrorToasts();
 
   // Home-screen shortcuts open straight into adding a task: /?action=add or /?action=voice.
+  // The action is also kept for a few seconds in sessionStorage: launching can install a new build,
+  // which reloads the page once, and the form should still be there after that.
   useEffect(() => {
     const url = new URL(window.location.href);
-    const action = url.searchParams.get('action');
-    if (!action) return;
-    url.searchParams.delete('action');
-    history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    let action = url.searchParams.get('action');
+    if (action) {
+      url.searchParams.delete('action');
+      history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+      try {
+        sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({ action, at: Date.now() }));
+      } catch {
+        // Storage off: the reload case is lost, the normal one still works.
+      }
+    } else {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(LAUNCH_KEY) ?? 'null') as { action: string; at: number } | null;
+        if (saved && Date.now() - saved.at < 15_000) action = saved.action;
+      } catch {
+        // Nothing saved.
+      }
+    }
+    if (action) {
+      setTimeout(() => {
+        try {
+          sessionStorage.removeItem(LAUNCH_KEY);
+        } catch {
+          // Storage off.
+        }
+      }, 15_000);
+    }
     if (action === 'add') editor.openCreate();
     else if (action === 'voice') setVoiceOpen(true);
     // Once, on launch.

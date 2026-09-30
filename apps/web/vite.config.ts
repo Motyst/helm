@@ -11,6 +11,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
+        // Stable app identity, so Android updates the installed app (and its shortcuts) in place.
+        id: '/',
         name: 'Helm',
         short_name: 'Helm',
         description: 'A calm, live task board for you and your AI agents.',
