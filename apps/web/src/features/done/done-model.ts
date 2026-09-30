@@ -20,7 +20,7 @@ export interface DoneFilter {
   to: string | null;
 }
 
-export const DEFAULT_FILTER: DoneFilter = { range: 'week', project: null, from: null, to: null };
+export const DEFAULT_FILTER: DoneFilter = { range: 'today', project: null, from: null, to: null };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 

@@ -33,6 +33,8 @@ import {
   type Columns,
 } from './board-model.ts';
 import { Bin } from './Bin.tsx';
+import { BoardTabs, reducedMotion, type BoardTab } from './BoardTabs.tsx';
+import { projectIcon } from './project-icon.ts';
 import { ProjectDialog } from './ProjectDialog.tsx';
 import { TaskCard } from './TaskCard.tsx';
 import './board.css';
@@ -176,8 +178,29 @@ export function BoardView() {
   const groupsFor = (bin: string) =>
     Object.fromEntries(PRIORITIES.map((p) => [p, cols[containerId(bin, p)] ?? []])) as Record<Priority, string[]>;
 
+  const tabs: BoardTab[] = bins.map((bin) => {
+    const project = projects.data?.find((p) => p.id === bin) ?? null;
+    return {
+      bin,
+      name: project?.name ?? 'Inbox',
+      icon: projectIcon(project),
+      color: project?.color ?? null,
+      count: PRIORITIES.reduce((n, p) => n + (cols[containerId(bin, p)]?.length ?? 0), 0),
+    };
+  });
+
+  /** Tab tapped: open the panel if folded, then bring it to the top. */
+  function jumpTo(bin: string) {
+    const project = projects.data?.find((p) => p.id === bin);
+    if (project ? project.collapsed : inboxCollapsed) toggleCollapsed(bin);
+    requestAnimationFrame(() =>
+      document.getElementById(`bin-${bin}`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }),
+    );
+  }
+
   return (
     <main className="board">
+      <BoardTabs tabs={tabs} onJump={jumpTo} />
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -207,6 +230,7 @@ export function BoardView() {
                 nodes={nodes}
                 collapsed={project ? project.collapsed : inboxCollapsed}
                 dragging={activeId !== null}
+                activeId={activeId}
                 onToggleCollapsed={() => toggleCollapsed(bin)}
                 onAdd={(priority) => editor.openCreate({ projectId: binProjectId(bin), priority })}
                 onEditProject={project ? () => setProjectDialog({ project, key: Date.now() }) : undefined}
@@ -219,7 +243,7 @@ export function BoardView() {
           </button>
         </div>
 
-        <DragOverlay dropAnimation={prefersReducedMotion() ? null : undefined}>{activeTask ? <TaskCard task={activeTask} overlay {...cardActions} /> : null}</DragOverlay>
+        <DragOverlay dropAnimation={reducedMotion() ? null : undefined}>{activeTask ? <TaskCard task={activeTask} overlay {...cardActions} /> : null}</DragOverlay>
       </DndContext>
 
       {projectDialog && (
@@ -227,10 +251,6 @@ export function BoardView() {
       )}
     </main>
   );
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function describeDrop(overId: string, cols: Columns, projects: Project[]): string {

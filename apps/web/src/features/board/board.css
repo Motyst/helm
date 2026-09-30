@@ -1,6 +1,64 @@
 .board {
   flex: 1;
-  padding-top: 0.5rem;
+}
+
+/* ----- Tabs: one per panel, stuck to the top of the screen while the board scrolls ----- */
+
+.board-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 0.3rem;
+  margin: 0 calc(-1 * var(--gutter)) 0.75rem;
+  padding: 0.4rem var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  background: color-mix(in oklab, var(--water) 84%, transparent);
+  backdrop-filter: blur(10px);
+}
+.board-tabs::-webkit-scrollbar {
+  display: none;
+}
+.board-tab {
+  --bin: var(--contour);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.board-tab:hover {
+  background: var(--shallows);
+}
+.board-tab[aria-current='true'] {
+  background: color-mix(in oklab, var(--bin) 30%, var(--water));
+  border-color: color-mix(in oklab, var(--bin) 70%, transparent);
+  color: var(--ink);
+  font-weight: 700;
+}
+.board-tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.board-tab-name {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.board-tab-count {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
 }
 
 .bins {
@@ -26,6 +84,8 @@
     rgb(8 20 30 / calc(0.55 * var(--panel)));
   overflow: hidden;
   transition: border-color 120ms, box-shadow 120ms;
+  /* A tab jump stops below the sticky tabs. */
+  scroll-margin-top: 3.5rem;
 }
 .bin.is-inbox {
   --bin-tint: color-mix(in oklab, var(--contour) calc(4% + 14% * var(--panel)), var(--water));
@@ -100,6 +160,11 @@
   font-size: var(--step--1);
   color: var(--ink-soft);
 }
+@media (max-width: 520px) {
+  .bin-stats-count {
+    display: none;
+  }
+}
 .bin-tools {
   display: flex;
   flex: none;
@@ -111,6 +176,22 @@
 
 .bin-body {
   padding: 0 0.75rem 0.75rem;
+}
+.bin-more {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0.5rem;
+  border: 1.5px dashed var(--bin-edge);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  font-weight: 700;
+}
+.bin-more:hover {
+  color: var(--ink);
+  border-color: var(--bin);
 }
 .bin-empty {
   padding: 0.25rem 0.5rem 0.5rem;
@@ -135,17 +216,49 @@
 .group + .group {
   margin-top: 0.75rem;
 }
+/* Small caps with a dot and a rule to the edge: easy to find, no taller than plain text. */
 .group-label {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0 0.25rem 0.35rem;
-  font-size: var(--step--1);
-  font-weight: 700;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.25rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.group-label::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.group-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bin-edge);
+}
+.group-label-now {
+  color: var(--accent);
+}
+.group-label-now::before {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.group-label-someday {
   color: var(--ink-soft);
 }
+.group-label-someday::before {
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
 .group-count {
-  font-weight: 400;
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0.75;
 }
 .group-list {
   list-style: none;

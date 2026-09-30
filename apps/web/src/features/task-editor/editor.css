@@ -274,6 +274,83 @@
   flex: 1;
 }
 
+/* Project chips: one tap to pick. One row that scrolls sideways (edge to edge) on a phone,
+   wrapping on wider screens. Each chip is tinted with its project's color. */
+.project-picker {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 -1.5rem;
+  padding: 3px 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.project-picker::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 561px) {
+  .project-picker {
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 3px 0;
+    overflow: visible;
+  }
+}
+.project-chip {
+  --pc: var(--contour);
+  position: relative;
+  flex: none;
+}
+.project-chip input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.project-chip > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-control);
+  border: 1.5px solid color-mix(in oklab, var(--pc) 45%, var(--contour-faint));
+  font-weight: 500;
+  white-space: nowrap;
+}
+.project-chip input:checked + span {
+  background: color-mix(in oklab, var(--pc) 35%, var(--water));
+  border-color: var(--pc);
+  font-weight: 700;
+}
+.project-chip input:focus-visible + span,
+.project-chip-new:focus-visible > span {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+button.project-chip-new {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+}
+.project-chip-new > span {
+  border-style: dashed;
+  border-color: var(--contour);
+}
+.project-chip-new:hover > span {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* Estimate: label and select on one line. */
+.editor-inline select {
+  width: auto;
+  min-width: 9rem;
+}
+
 /* Radio groups drawn as pills; the real radios stay focusable. */
 .segmented,
 .chips {

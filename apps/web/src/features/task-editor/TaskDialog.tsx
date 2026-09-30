@@ -1,6 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { PRIORITIES, parseQuickAdd, projectCandidates, type Priority, type Task } from '@helm/shared';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
+import { PRIORITIES, parseQuickAdd, projectCandidates, type Priority, type Project, type Task } from '@helm/shared';
 import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
 import { upsertTask, useCreateProject, useProjects, useSetAgentState, useTaskAction, useTasks } from '../../lib/queries.ts';
@@ -8,13 +18,13 @@ import { focusWithKeyboard } from '../../lib/keyboard.ts';
 import { hrefFor } from '../../lib/route.ts';
 import { LineInput } from '../../ui/LineInput.tsx';
 import { agentName } from '../board/agent-badge.ts';
+import { projectIcon } from '../board/project-icon.ts';
 import type { EditorTarget } from './EditorContext.tsx';
 import { createFromDraft, draftFrom, draftFromSuggestion, saveDraft, type SubtaskDraft, type TaskDraft } from './save.ts';
 import './editor.css';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
 const ESTIMATES = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240];
-const NEW_PROJECT = '__new__';
 const OTHER = '__other__';
 /** Transcripts longer than this are cut to two lines until expanded. */
 const LONG_TRANSCRIPT = 120;
@@ -37,7 +47,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   const tasks = useTasks();
   const projects = useProjects();
   const createProject = useCreateProject();
-  const ids = { title: useId(), notes: useId(), project: useId(), estimate: useId(), priority: useId() };
+  const ids = { title: useId(), notes: useId(), estimate: useId(), priority: useId() };
 
   const editing: Task | undefined =
     target.mode === 'edit' ? tasks.data?.find((t) => t.id === target.taskId && !t.deletedAt) : undefined;
@@ -341,63 +351,74 @@ export function TaskDialog({ target, queued, onClose }: Props) {
           )}
         </div>
 
-        <div className="editor-grid">
-          {!isSubtask && (
-            <div className="field">
-              <label htmlFor={ids.project}>Project</label>
-              {newProjectName === null ? (
-                <select
-                  id={ids.project}
-                  value={draft.projectId ?? ''}
-                  onChange={(e) => {
-                    if (e.target.value === NEW_PROJECT) setNewProjectName('');
-                    else set('projectId', e.target.value || null);
-                  }}
-                >
-                  <option value="">Inbox</option>
-                  {(projects.data ?? []).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                  <option value={NEW_PROJECT}>New project…</option>
-                </select>
-              ) : (
-                <div className="inline-new">
-                  <LineInput
-                    id={ids.project}
-                    autoFocus
-                    placeholder="New project"
-                    value={newProjectName}
-                    onValueChange={setNewProjectName}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (newProjectName.trim()) void addProject(newProjectName.trim());
-                      } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        setNewProjectName(null);
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={!newProjectName.trim() || createProject.isPending}
-                    onClick={() => addProject(newProjectName.trim())}
-                  >
-                    Create
-                  </button>
-                  <button type="button" className="btn btn-quiet" onClick={() => setNewProjectName(null)}>
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
+        {!isSubtask && (
           <div className="field">
-            <label htmlFor={ids.estimate}>Estimate</label>
+            {newProjectName === null ? (
+              <ProjectPicker
+                projects={projects.data ?? []}
+                value={draft.projectId}
+                onChange={(id) => set('projectId', id)}
+                onNew={() => setNewProjectName('')}
+              />
+            ) : (
+              <div className="inline-new">
+                <LineInput
+                  aria-label="New project name"
+                  autoFocus
+                  placeholder="New project"
+                  value={newProjectName}
+                  onValueChange={setNewProjectName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newProjectName.trim()) void addProject(newProjectName.trim());
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setNewProjectName(null);
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={!newProjectName.trim() || createProject.isPending}
+                  onClick={() => addProject(newProjectName.trim())}
+                >
+                  Create
+                </button>
+                <button type="button" className="btn btn-quiet" onClick={() => setNewProjectName(null)}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="field editor-inline" role="radiogroup" aria-labelledby={ids.priority}>
+          <span id={ids.priority} className="editor-inline-label">
+            Priority
+          </span>
+          <div className="segmented">
+            {PRIORITIES.map((p) => (
+              <label key={p} className={`seg seg-${p}`}>
+                <input
+                  type="radio"
+                  name="priority"
+                  value={p}
+                  checked={draft.priority === p}
+                  onChange={() => set('priority', p)}
+                />
+                <span>{PRIORITY_LABEL[p]}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="editor-grid">
+          <div className="field editor-inline">
+            <label htmlFor={ids.estimate} className="editor-inline-label">
+              Estimate
+            </label>
             {customEstimate ? (
               <span className="estimate-custom">
                 <input
@@ -443,26 +464,6 @@ export function TaskDialog({ target, queued, onClose }: Props) {
                 <option value={OTHER}>Other…</option>
               </select>
             )}
-          </div>
-        </div>
-
-        <div className="field editor-inline" role="radiogroup" aria-labelledby={ids.priority}>
-          <span id={ids.priority} className="editor-inline-label">
-            Priority
-          </span>
-          <div className="segmented">
-            {PRIORITIES.map((p) => (
-              <label key={p} className={`seg seg-${p}`}>
-                <input
-                  type="radio"
-                  name="priority"
-                  value={p}
-                  checked={draft.priority === p}
-                  onChange={() => set('priority', p)}
-                />
-                <span>{PRIORITY_LABEL[p]}</span>
-              </label>
-            ))}
           </div>
         </div>
 
@@ -625,6 +626,56 @@ function AgentStatus({
           Take it off the agents’ list
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Projects as a row of chips: one tap to pick, the Inbox first and a new project last. */
+function ProjectPicker({
+  projects,
+  value,
+  onChange,
+  onNew,
+}: {
+  projects: Project[];
+  value: string | null;
+  onChange: (id: string | null) => void;
+  onNew: () => void;
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  // Keep the picked project in view (the row scrolls sideways on a phone), also when #shorthand
+  // in the title picks one.
+  useEffect(() => {
+    const row = rowRef.current;
+    const on = row?.querySelector<HTMLElement>('input:checked')?.parentElement;
+    if (!row || !on) return;
+    const pad = 24;
+    if (on.offsetLeft - pad < row.scrollLeft) row.scrollLeft = on.offsetLeft - pad;
+    else if (on.offsetLeft + on.offsetWidth + pad > row.scrollLeft + row.clientWidth)
+      row.scrollLeft = on.offsetLeft + on.offsetWidth + pad - row.clientWidth;
+  }, [value]);
+  const options = [
+    { id: null, name: 'Inbox', color: null, icon: projectIcon(null) },
+    ...projects.map((p) => ({ id: p.id, name: p.name, color: p.color, icon: projectIcon(p) })),
+  ];
+  return (
+    <div className="project-picker" role="radiogroup" aria-label="Project" ref={rowRef}>
+      {options.map((o) => (
+        <label
+          key={o.id ?? 'inbox'}
+          className="project-chip"
+          style={o.color ? ({ '--pc': o.color } as CSSProperties) : undefined}
+        >
+          <input type="radio" name="project" checked={value === o.id} onChange={() => onChange(o.id)} />
+          <span>
+            {o.icon && <span aria-hidden="true">{o.icon}</span>}
+            {o.name}
+          </span>
+        </label>
+      ))}
+      <button type="button" className="project-chip project-chip-new" onClick={onNew}>
+        <span>+ New</span>
+      </button>
     </div>
   );
 }

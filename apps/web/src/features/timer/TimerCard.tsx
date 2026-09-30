@@ -151,7 +151,7 @@ export function TimerChip() {
   const { timer, remaining, due } = useTimerState();
   if (!timer) return null;
   return (
-    <a href="#/" className={`timer-chip ${due ? 'is-due' : ''} ${timer.status === 'paused' ? 'is-paused' : ''}`} title="Timer">
+    <a href="#/focus" className={`timer-chip ${due ? 'is-due' : ''} ${timer.status === 'paused' ? 'is-paused' : ''}`} title="Timer">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
         <path d="M12 9v4l2.5 2M9.5 2.5h5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

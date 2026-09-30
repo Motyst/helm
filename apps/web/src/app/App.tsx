@@ -26,8 +26,8 @@ const SYNC_LABEL: Record<SyncState, string> = {
 };
 
 const NAV: { route: Route; label: string; key: string }[] = [
-  { route: 'focus', label: 'Focus', key: 'f' },
   { route: 'board', label: 'Board', key: 'b' },
+  { route: 'focus', label: 'Focus', key: 'f' },
   { route: 'done', label: 'Done', key: 'd' },
 ];
 

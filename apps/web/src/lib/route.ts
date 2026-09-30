@@ -3,18 +3,19 @@ import { useEffect, useState } from 'react';
 export type Route = 'focus' | 'board' | 'done' | 'activity' | 'settings';
 
 const ROUTES: Record<string, Route> = {
-  '': 'focus',
-  '#/': 'focus',
+  '': 'board',
+  '#/': 'board',
   '#/board': 'board',
+  '#/focus': 'focus',
   '#/done': 'done',
   '#/activity': 'activity',
   '#/settings': 'settings',
 };
 
-export const hrefFor = (r: Route) => (r === 'focus' ? '#/' : `#/${r}`);
+export const hrefFor = (r: Route) => (r === 'board' ? '#/' : `#/${r}`);
 
 function current(): Route {
-  return ROUTES[window.location.hash.split('?')[0]!] ?? 'focus';
+  return ROUTES[window.location.hash.split('?')[0]!] ?? 'board';
 }
 
 /** View state kept in the hash (`#/done?range=week`), so a filtered view can be bookmarked. */

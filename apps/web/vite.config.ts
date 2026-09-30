@@ -42,7 +42,7 @@ export default defineConfig({
             url: '/?action=voice',
             icons: [{ src: 'shortcut-voice.png', sizes: '192x192', type: 'image/png' }],
           },
-          { name: 'Board', url: '/#/board' },
+          { name: 'Focus', url: '/#/focus' },
           { name: 'Done', url: '/#/done' },
         ],
       },
