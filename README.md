@@ -11,14 +11,17 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 
 ## Features
 
-- **Tasks** with notes, subtasks, an estimate and a priority: **Now**, **Soon** or **Someday**.
-  One task is in progress at a time.
+- **Board**, the home screen: one panel per project, tasks grouped by **Now**, **Soon** and
+  **Someday**. Tabs along the top jump to a project; long panels show 10 tasks, then "Show more".
+  Drag tasks between projects and priorities.
+- **Tasks** with notes, subtasks and an estimate; pick the project with one tap. One task is in
+  progress at a time.
 - **Focus**: the task you're on, time spent vs. the estimate, and what's next, in one of three
   layouts (One thing, Vital three, Compass).
 - **Timer** that runs on the server, so every device shows the same countdown, with a push
   notification when it ends.
-- **Board** with one panel per project; drag tasks between projects and priorities.
-- **Done** log by day, plus an **Activity** feed of every change with Undo.
+- **Done**: what you finished, starting with today, plus an **Activity** feed of every change
+  with Undo.
 - **Voice**: say what needs doing and Helm drafts the task (title, project, priority, subtasks).
 - **Assistant**: suggests an order for your tasks and answers questions about the board.
 - **AI agents**: hand a task to an agent, which claims it, works on it and sends it back for
@@ -32,7 +35,7 @@ change it through MCP or a REST API. Changes show up everywhere at once.
   <img src="docs/screenshots/phone-voice-review.png" width="250" alt="A task drafted by voice">
 </p>
 
-Desktop keys: **N** new task, **V** voice, **A** assistant, **F** / **B** / **D** to switch views.
+Desktop keys: **N** new task, **V** voice, **A** assistant, **B** / **F** / **D** to switch views.
 
 ## Quick start
 
