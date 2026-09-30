@@ -5,6 +5,7 @@ import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
 import { upsertTask, useCreateProject, useProjects, useSetAgentState, useTaskAction, useTasks } from '../../lib/queries.ts';
 import { hrefFor } from '../../lib/route.ts';
+import { LineInput } from '../../ui/LineInput.tsx';
 import { agentName } from '../board/agent-badge.ts';
 import type { EditorTarget } from './EditorContext.tsx';
 import { createFromDraft, draftFrom, draftFromSuggestion, saveDraft, type SubtaskDraft, type TaskDraft } from './save.ts';
@@ -30,7 +31,7 @@ interface Props {
 
 export function TaskDialog({ target, queued, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const qc = useQueryClient();
   const tasks = useTasks();
   const projects = useProjects();
@@ -147,7 +148,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
     setFocusSub(fresh.key);
   }
 
-  function onSubKeyDown(e: KeyboardEvent<HTMLInputElement>, s: SubtaskDraft) {
+  function onSubKeyDown(e: KeyboardEvent<HTMLTextAreaElement>, s: SubtaskDraft) {
     if (e.key === 'Enter') {
       e.preventDefault();
       addSubAfter(s.key);
@@ -215,6 +216,8 @@ export function TaskDialog({ target, queued, onClose }: Props) {
           ? `Task from voice, ${voice.index} of ${voice.total}`
           : 'Task from voice'
         : 'New task';
+  const cancelLabel = queued ? 'Skip' : 'Cancel';
+  const submitLabel = editing ? 'Save' : isSubtask ? 'Add subtask' : 'Add task';
   const estimateIsCustom = draft.estimateMinutes !== null && !ESTIMATES.includes(draft.estimateMinutes);
 
   return (
@@ -233,16 +236,24 @@ export function TaskDialog({ target, queued, onClose }: Props) {
         autoComplete="off"
         onSubmit={submit}
         onKeyDown={(e) => {
-          // Enter already submits from inputs; Ctrl/Cmd+Enter adds that for the notes textarea.
+          // Enter already submits from one-line fields; Ctrl/Cmd+Enter adds that for the notes.
+          if (e.defaultPrevented) return;
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && e.target instanceof HTMLTextAreaElement) {
             e.preventDefault();
             void submit();
           }
         }}
       >
+        {/* On phones Cancel and Add sit up here, above the keyboard; the footer ones are hidden. */}
         <header className="editor-head">
+          <button type="button" className="btn btn-quiet editor-head-btn" onClick={() => close(true)}>
+            {cancelLabel}
+          </button>
           <h2 id="editor-heading">{heading}</h2>
-          <button type="button" className="icon-btn" aria-label="Close" onClick={() => close()}>
+          <button type="submit" className="btn btn-primary editor-head-btn" disabled={busy}>
+            {submitLabel}
+          </button>
+          <button type="button" className="icon-btn editor-close" aria-label="Close" onClick={() => close()}>
             ✕
           </button>
         </header>
@@ -280,17 +291,17 @@ export function TaskDialog({ target, queued, onClose }: Props) {
         )}
 
         <div className="field">
+          {/* Not labelled "Title": Chrome reads that as a name prefix (Mr, Ms) and offers addresses. */}
           <label htmlFor={ids.title} className="visually-hidden">
-            Title
+            What needs doing
           </label>
-          <input
+          <LineInput
             id={ids.title}
             ref={titleRef}
             className="editor-title"
             value={draft.title}
-            onChange={(e) => onTitleChange(e.target.value)}
+            onValueChange={onTitleChange}
             placeholder="What needs doing?"
-            autoComplete="off"
             maxLength={500}
           />
           {parsed.title !== draft.title.trim() && parsed.title && (
@@ -352,13 +363,12 @@ export function TaskDialog({ target, queued, onClose }: Props) {
                 </select>
               ) : (
                 <div className="inline-new">
-                  <input
+                  <LineInput
                     id={ids.project}
-                    autoComplete="off"
                     autoFocus
-                    placeholder="Project name"
+                    placeholder="New project"
                     value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
+                    onValueChange={setNewProjectName}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -480,15 +490,14 @@ export function TaskDialog({ target, queued, onClose }: Props) {
                   aria-label={`Done: ${s.title || 'new subtask'}`}
                   onChange={(e) => updateSub(s.key, { done: e.target.checked })}
                 />
-                <input
+                <LineInput
                   id={`sub-${s.key}`}
-                  autoComplete="off"
-                  className={s.done ? 'is-done' : undefined}
+                  className={`sub-input${s.done ? ' is-done' : ''}`}
                   value={s.title}
                   placeholder="Subtask"
-                  aria-label="Subtask title"
+                  aria-label="Subtask"
                   maxLength={500}
-                  onChange={(e) => updateSub(s.key, { title: e.target.value })}
+                  onValueChange={(v) => updateSub(s.key, { title: v })}
                   onKeyDown={(e) => onSubKeyDown(e, s)}
                 />
                 <button
@@ -540,7 +549,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
           </p>
         )}
 
-        <footer className="editor-foot">
+        <footer className={`editor-foot${editing ? '' : ' is-new'}`}>
           {editing && (
             <button type="button" className="btn btn-quiet btn-danger" disabled={busy} onClick={remove}>
               {confirmDelete ? 'Confirm delete' : 'Delete'}
@@ -559,11 +568,11 @@ export function TaskDialog({ target, queued, onClose }: Props) {
             </button>
           )}
           <span className="spacer" />
-          <button type="button" className="btn btn-quiet" onClick={() => close(true)}>
-            {queued ? 'Skip' : 'Cancel'}
+          <button type="button" className="btn btn-quiet editor-foot-btn" onClick={() => close(true)}>
+            {cancelLabel}
           </button>
-          <button type="submit" className="btn btn-primary" disabled={busy}>
-            {editing ? 'Save' : isSubtask ? 'Add subtask' : 'Add task'}
+          <button type="submit" className="btn btn-primary editor-foot-btn" disabled={busy}>
+            {submitLabel}
           </button>
         </footer>
       </form>

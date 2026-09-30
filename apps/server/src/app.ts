@@ -50,14 +50,25 @@ export async function createApp({
     }
     if (err instanceof HTTPException) {
       const status = err.status as ContentfulStatusCode;
-      return c.json({ error: { code: status === 403 ? 'forbidden' : 'http_error', message: err.message } }, status);
+      // The CSRF check throws a bare 403; say what to do about it.
+      const message =
+        err.message ||
+        (status === 403
+          ? 'Cross-site request blocked. Send JSON (Content-Type: application/json) or use a bearer token.'
+          : 'Request failed');
+      return c.json({ error: { code: status === 403 ? 'forbidden' : 'http_error', message } }, status);
     }
     console.error(err);
     return c.json({ error: { code: 'internal', message: 'Internal error' } }, 500);
   });
 
-  // Rejects cross-site form-style posts (cookie sessions); bearer-token clients aren't browsers.
-  app.use('/api/*', csrf());
+  // Rejects cross-site form-style posts made with the session cookie. Requests with a bearer token
+  // skip it: a browser can't attach that header cross-site without CORS (which Helm doesn't allow),
+  // and a bearer header is never answered with the cookie's rights (see `authenticate`).
+  const csrfCheck = csrf();
+  app.use('/api/*', (c, next) =>
+    /^bearer\s/i.test(c.req.header('authorization') ?? '') ? next() : csrfCheck(c, next),
+  );
 
   app.get('/api/v1/health', (c) => c.json({ ok: true }));
   app.route('/api/v1/auth', authRoutes(config));

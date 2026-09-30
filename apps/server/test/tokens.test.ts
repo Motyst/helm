@@ -96,6 +96,33 @@ describe('bearer tokens over REST', () => {
     expect((await app.request('/api/v1/tokens', { headers: json(rw) })).status).toBe(403);
   });
 
+  it('accepts bodiless POSTs from tokens but still blocks cross-site cookie posts', async () => {
+    const { app, services } = await makeApp();
+    const secret = services.tokens.create(OWNER, { name: 'Script', scope: 'read_write' }).secret;
+    const t = services.tasks.create(OWNER, { title: 'Ship it' });
+
+    const done = await app.request(`/api/v1/tasks/${t.id}/complete`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${secret}` },
+    });
+    expect(done.status).toBe(200);
+    expect(services.tasks.get(OWNER, t.id).status).toBe('done');
+
+    const login = await app.request('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: testConfig.ownerPassword }),
+    });
+    const cookie = login.headers.get('set-cookie')!.split(';')[0]!;
+    const forged = await app.request(`/api/v1/tasks/${t.id}/reopen`, {
+      method: 'POST',
+      headers: { cookie, origin: 'https://evil.example', 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    expect(forged.status).toBe(403);
+    expect(((await forged.json()) as { error: { message: string } }).error.message).toContain('Cross-site request blocked');
+    expect(services.tasks.get(OWNER, t.id).status).toBe('done');
+  });
+
   it('rejects revoked tokens and closes their live stream', async () => {
     const { app, services } = await makeApp();
     const { token: t, secret } = services.tokens.create(OWNER, { name: 'A', scope: 'read' });
@@ -146,7 +173,9 @@ describe('MCP', () => {
   });
 
   it('creates, starts and completes tasks through the services', async () => {
-    const { app, services } = await makeApp();
+    const { app, services, clock } = await makeApp();
+    // list_done looks back from the real clock.
+    clock.set(new Date().toISOString());
     services.projects.create(OWNER, { name: 'Helm' });
     const client = await connect(app, services.tokens.create(OWNER, { name: 'Claude', scope: 'read_write' }).secret);
 

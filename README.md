@@ -71,7 +71,10 @@ The push keys are made on first start and kept in the database, so there's nothi
   it (you, the assistant or an agent) and what it was before, with Undo. See
   [Activity and undo](#activity-and-undo).
 - **On a phone** Helm installs from the browser like an app and opens offline with the last
-  board it saw. The microphone floats at the bottom right, in thumb reach.
+  board it saw. The microphone floats at the bottom right, in thumb reach, and a new task's
+  Cancel and Add buttons sit at the top, above the keyboard. Long-press the app icon for
+  **Add task** and **Add task by voice**; on Android, drag either onto the home screen to get an
+  icon that opens straight into it (`/?action=add`, `/?action=voice`).
 
 Everything is live: a change on one device, or by an AI assistant, appears on the others within
 a moment. Keys on a desktop: **N** new task, **V** voice, **A** assistant, **F**/**B**/**D** to

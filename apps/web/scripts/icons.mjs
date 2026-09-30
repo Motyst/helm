@@ -80,4 +80,20 @@ png(rounded, 512, 'icon-512.png');
 // Maskable and Apple icons are full-bleed; the OS applies its own shape.
 png(square, 512, 'icon-maskable-512.png');
 png(square, 180, 'apple-touch-icon.png');
+
+/** Home-screen shortcut icons: the helm's sea and magenta, with one glyph, clear of a circular crop. */
+function shortcut(glyph) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="${NAVY}"/>
+  <circle cx="96" cy="96" r="58" fill="${MAGENTA}"/>
+  <g fill="none" stroke="${NAVY}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>
+</svg>
+`;
+}
+png(shortcut('<path d="M96 70v52M70 96h52"/>'), 192, 'shortcut-add.png');
+png(
+  shortcut('<rect x="84" y="62" width="24" height="42" rx="12"/><path d="M72 94a24 24 0 0 0 48 0M96 118v12"/>'),
+  192,
+  'shortcut-voice.png',
+);
 console.log(`Icons written to ${out}`);

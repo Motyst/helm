@@ -54,6 +54,43 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+/* Cancel and Add live in the footer on wider screens, in the header on phones. */
+.editor-head .editor-head-btn {
+  display: none;
+}
+
+/* Phone: the keyboard covers the bottom of the sheet, so the actions move to a sticky header. */
+@media (max-width: 560px) {
+  .editor-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    gap: 0.5rem;
+    margin: -0.9rem -1.5rem 0;
+    padding: 0.6rem 1rem;
+    background: var(--water);
+    border-bottom: 1px solid var(--contour-faint);
+  }
+  .editor-head h2 {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .editor-head .editor-head-btn {
+    display: inline-flex;
+  }
+  .editor-head .editor-close,
+  .editor-foot .editor-foot-btn {
+    display: none;
+  }
+  /* A new task has nothing else in the footer. */
+  .editor-foot.is-new {
+    display: none;
+  }
+}
 .editor-parent {
   margin-top: -0.75rem;
   color: var(--ink-soft);
@@ -96,6 +133,14 @@
 .editor-voice-note {
   font-size: var(--step--1);
   color: var(--ink-soft);
+}
+
+/* One-line fields drawn as textareas (see ui/LineInput): they wrap instead of scrolling sideways. */
+.line-input {
+  display: block;
+  resize: none;
+  overflow: hidden;
+  field-sizing: content;
 }
 
 .editor-title {
@@ -203,8 +248,8 @@
 }
 
 .field select,
-.field textarea,
-.inline-new input {
+.field textarea:not(.line-input),
+.inline-new .line-input {
   font: inherit;
   width: 100%;
   min-height: 44px;
@@ -215,7 +260,7 @@
   color: var(--ink);
 }
 /* Two lines to start, growing with what's written. */
-.field textarea {
+.field textarea:not(.line-input) {
   resize: vertical;
   min-height: 3.4rem;
   max-height: 7.5rem;
@@ -225,7 +270,7 @@
   display: flex;
   gap: 0.5rem;
 }
-.inline-new input {
+.inline-new .line-input {
   flex: 1;
 }
 
@@ -328,22 +373,23 @@
   accent-color: var(--contour);
   flex: none;
 }
-.sub-row input:not([type]) {
+.sub-row .sub-input {
   flex: 1;
   min-width: 0;
   min-height: 44px;
+  padding: 0.65rem 0;
   font: inherit;
   border: 0;
   background: transparent;
   color: var(--ink);
 }
-.sub-row input:not([type]):focus {
+.sub-row .sub-input:focus {
   outline: none;
 }
 .sub-row:focus-within {
   border-bottom-color: var(--accent);
 }
-.sub-row input.is-done {
+.sub-row .sub-input.is-done {
   color: var(--ink-soft);
   text-decoration: line-through;
 }

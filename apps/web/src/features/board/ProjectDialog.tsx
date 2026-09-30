@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { PROJECT_COLORS, type Project } from '@helm/shared';
 import { ApiError } from '../../lib/api.ts';
+import { LineInput } from '../../ui/LineInput.tsx';
 import {
   useArchiveProject,
   useCreateProject,
@@ -116,15 +117,15 @@ export function ProjectDialog({ project, onClose }: { project?: Project; onClose
         </header>
 
         <div className="field">
-          <label htmlFor={nameId}>Name</label>
-          <input
+          {/* "Project", not "Name": Chrome would offer a person's name from autofill. */}
+          <label htmlFor={nameId}>Project</label>
+          <LineInput
             id={nameId}
             className="editor-title"
-            autoComplete="off"
             value={name}
             autoFocus
             maxLength={100}
-            onChange={(e) => setName(e.target.value)}
+            onValueChange={setName}
           />
         </div>
 

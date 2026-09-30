@@ -99,6 +99,18 @@ function Shell({ sync }: { sync: SyncState }) {
   const assistant = useAssistant();
   useMutationErrorToasts();
 
+  // Home-screen shortcuts open straight into adding a task: /?action=add or /?action=voice.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const action = url.searchParams.get('action');
+    if (!action) return;
+    url.searchParams.delete('action');
+    history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    if (action === 'add') editor.openCreate();
+    else if (action === 'voice') setVoiceOpen(true);
+    // Once, on launch.
+  }, []);
+
   // Single-key shortcuts: N new task, V voice, A assistant, F focus, B board, D done
   // (not while typing or in a dialog).
   useEffect(() => {

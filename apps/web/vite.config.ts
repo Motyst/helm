@@ -26,7 +26,20 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        // Long-press the app icon for these; on Android each can be dragged out as its own icon.
         shortcuts: [
+          {
+            name: 'Add task',
+            short_name: 'Add task',
+            url: '/?action=add',
+            icons: [{ src: 'shortcut-add.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Add task by voice',
+            short_name: 'Voice',
+            url: '/?action=voice',
+            icons: [{ src: 'shortcut-voice.png', sizes: '192x192', type: 'image/png' }],
+          },
           { name: 'Board', url: '/#/board' },
           { name: 'Done', url: '/#/done' },
         ],
