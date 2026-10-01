@@ -5,6 +5,7 @@ import { PRIORITIES, type Priority, type Project, type TaskNode } from '@helm/sh
 import { formatMinutes } from '../../lib/format.ts';
 import { binDropId, containerId } from './board-model.ts';
 import { projectIcon } from './project-icon.ts';
+import { QuickAdd } from './QuickAdd.tsx';
 import { SortableTaskCard, type CardActions } from './TaskCard.tsx';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
@@ -15,6 +16,8 @@ interface BinProps extends CardActions {
   bin: string;
   /** null for the Inbox. */
   project: Project | null;
+  /** All live projects, for `#name` in quick add. */
+  projects: Project[];
   /** Task ids per priority, in display order. */
   groups: Record<Priority, string[]>;
   nodes: Map<string, TaskNode>;
@@ -30,8 +33,10 @@ interface BinProps extends CardActions {
 export function Bin(props: BinProps) {
   const { bin, project, groups, nodes, collapsed, dragging, activeId } = props;
   const [expanded, setExpanded] = useState(false);
+  // Added here with quick add: kept in view even past the first ten, so you see it land.
+  const [added, setAdded] = useState<ReadonlySet<string>>(new Set());
   const ids = PRIORITIES.flatMap((p) => groups[p]);
-  const shown = new Set(expanded ? ids : ids.filter((id, i) => i < SHOW_FIRST || id === activeId));
+  const shown = new Set(expanded ? ids : ids.filter((id, i) => i < SHOW_FIRST || id === activeId || added.has(id)));
   const hidden = ids.length - shown.size;
   const minutes = ids.reduce((sum, id) => sum + (nodes.get(id)?.estimateMinutes ?? 0), 0);
   const name = project?.name ?? 'Inbox';
@@ -93,13 +98,14 @@ export function Bin(props: BinProps) {
 
       {!collapsed && (
         <div className="bin-body" id={bodyId}>
+          <QuickAdd
+            projectId={project?.id ?? null}
+            name={name}
+            projects={props.projects}
+            onAdded={(t) => setAdded((a) => new Set(a).add(t.id))}
+          />
           {ids.length === 0 && !dragging ? (
-            <p className="bin-empty">
-              Nothing here yet.{' '}
-              <button className="link-btn" onClick={() => props.onAdd()}>
-                Add a task
-              </button>
-            </p>
+            <p className="bin-empty">Nothing here yet.</p>
           ) : (
             PRIORITIES.map((p) => {
               const visible = groups[p].filter((id) => shown.has(id));

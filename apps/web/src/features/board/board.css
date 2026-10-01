@@ -193,6 +193,127 @@
   color: var(--ink);
   border-color: var(--bin);
 }
+/* ----- Quick add: "Add a task" row at the top of a panel ----- */
+
+.quick-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 0.65rem;
+  padding: 0 0.8rem;
+  border: 1.5px dashed var(--bin-edge);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-align: left;
+  cursor: text;
+}
+.quick-add-row:hover {
+  color: var(--ink);
+  border-color: var(--bin);
+}
+.quick-add-plus {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in oklab, var(--bin) 60%, var(--ink));
+}
+.quick-add {
+  margin-bottom: 0.65rem;
+}
+.quick-add-form {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.8rem;
+  border: 1.5px solid var(--bin);
+  border-radius: 12px;
+  background: var(--water);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--bin) 22%, transparent);
+}
+.quick-add-input {
+  flex: 1;
+  min-width: 0;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  outline: none;
+}
+.quick-add-input:focus-visible {
+  /* The form around it shows the focus ring. */
+  outline: none;
+}
+.quick-add-input::placeholder {
+  color: var(--ink-soft);
+}
+.quick-add-prio {
+  flex: none;
+  height: 1.85rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--contour-faint);
+  border-radius: 999px;
+  background: var(--shallows);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.quick-add-prio-now {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.quick-add-prio-someday {
+  color: var(--ink-soft);
+}
+.quick-add-more,
+.quick-add-send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 800;
+}
+.quick-add-more {
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-soft);
+}
+.quick-add-more:hover {
+  background: var(--shallows);
+  color: var(--ink);
+}
+.quick-add-send {
+  background: var(--accent);
+  color: var(--water);
+}
+.quick-add-send:disabled {
+  background: var(--contour-faint);
+  color: var(--ink-soft);
+}
+.quick-add-hint {
+  margin: 0.3rem 0.25rem 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bin-empty {
   padding: 0.25rem 0.5rem 0.5rem;
   color: var(--ink-soft);

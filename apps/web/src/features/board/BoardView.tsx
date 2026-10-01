@@ -248,6 +248,7 @@ export function BoardView() {
                 key={bin}
                 bin={bin}
                 project={project}
+                projects={projects.data ?? []}
                 groups={groupsFor(bin)}
                 nodes={nodes}
                 collapsed={project ? project.collapsed : inboxCollapsed}

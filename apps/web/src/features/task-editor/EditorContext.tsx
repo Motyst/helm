@@ -15,6 +15,8 @@ export interface VoiceOrigin {
 }
 
 export interface CreateDefaults {
+  /** Typed in the panel's quick add before opening the full form. */
+  title?: string;
   projectId?: string | null;
   priority?: Priority;
   parentTaskId?: string;

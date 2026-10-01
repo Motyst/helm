@@ -70,7 +70,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
       : voice
         ? draftFromSuggestion(voice.suggestion)
         : {
-            title: '',
+            title: target.mode === 'create' ? (target.defaults.title ?? '') : '',
             notes: '',
             projectId: target.mode === 'create' ? (target.defaults.projectId ?? null) : null,
             priority: target.mode === 'create' ? (target.defaults.priority ?? 'soon') : 'soon',
