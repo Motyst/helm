@@ -168,15 +168,33 @@
   .topbar-end > .topbar-icon:not(.voice-btn) {
     width: 40px;
   }
-  /* Round + button; the hidden label stays as its accessible name. */
-  .topbar-add {
+  /* A round + floating just left of the mic, in thumb reach; the hidden label stays as its
+     accessible name. Centered on the mic's line (it's 3.75rem, this 3.25rem). `.topbar` beats
+     `.btn`, whose stylesheet loads later. */
+  .topbar .topbar-add {
+    position: fixed;
+    z-index: 5;
+    right: calc(1rem + 3.75rem + 0.7rem);
+    bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 0.25rem);
     justify-content: center;
-    width: 44px;
+    width: 3.25rem;
+    height: 3.25rem;
+    min-height: 0;
     padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--water);
+    box-shadow: 0 10px 24px -8px rgb(8 20 30 / 0.5);
+  }
+  .topbar .topbar-add:hover {
+    background: var(--ink);
+    color: var(--water);
   }
   .topbar-add-plus {
     display: block;
-    font-size: var(--step-1);
+    font-size: 1.9rem;
+    font-weight: 500;
     line-height: 1;
   }
   .topbar-add-label {

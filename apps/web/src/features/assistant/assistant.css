@@ -319,9 +319,10 @@
   white-space: nowrap;
 }
 
-/* Phone: the floating mic sits over the composer otherwise. */
+/* Phone: the floating mic and + sit over the composer otherwise. */
 @media (max-width: 520px) {
-  .shell.has-assistant .voice-btn {
+  .shell.has-assistant .voice-btn,
+  .shell.has-assistant .topbar-add {
     display: none;
   }
 }

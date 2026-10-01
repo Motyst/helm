@@ -67,9 +67,14 @@
     z-index: 1;
     gap: 0.5rem;
     margin: -0.9rem -1.5rem 0;
-    padding: 0.6rem 1rem;
+    padding: 0.3rem 0.75rem;
     background: var(--water);
     border-bottom: 1px solid var(--contour-faint);
+  }
+  /* Slim bars: more of the form shows above the keyboard. */
+  .editor-head .btn {
+    min-height: 2.4rem;
+    padding: 0 0.95rem;
   }
   .editor-head h2 {
     flex: 1;
@@ -100,8 +105,8 @@
     bottom: 0;
     z-index: 1;
     margin: -0.25rem -1.5rem 0;
-    padding: 0.35rem 1.5rem;
-    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+    padding: 0.1rem 1.5rem;
+    padding-bottom: max(0.1rem, env(safe-area-inset-bottom));
     background: var(--water);
     border-top: 1px solid var(--contour-faint);
   }

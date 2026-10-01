@@ -8,6 +8,7 @@ import '../task-editor/editor.css';
 import './settings.css';
 import { AlertsSection } from './AlertsSection.tsx';
 import { ThemeSection } from './ThemePicker.tsx';
+import { UpdatesSection } from './UpdatesSection.tsx';
 import { FOCUS_LAYOUTS, setFocusLayout, useFocusLayout } from '../focus/focus-layout.ts';
 
 const ACCESS: { value: TokenScope; label: string; hint: string }[] = [
@@ -49,6 +50,8 @@ export function SettingsView() {
       <FocusLayoutSection />
 
       <AlertsSection />
+
+      <UpdatesSection />
 
       <SessionSection />
     </main>

@@ -4,6 +4,7 @@ import { parseQuickAdd, projectCandidates, type Priority, type Project, type Tas
 import { api } from '../../lib/api.ts';
 import { upsertTask } from '../../lib/queries.ts';
 import { useToast } from '../../ui/Toast.tsx';
+import { LineInput } from '../../ui/LineInput.tsx';
 import { useEditor } from '../task-editor/EditorContext.tsx';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
@@ -34,7 +35,7 @@ export function QuickAdd({ projectId, name, projects, onAdded }: QuickAddProps) 
   const [text, setText] = useState('');
   const [priority, setPriority] = useState<Priority>('soon');
   const [added, setAdded] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const hintId = useId();
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export function QuickAdd({ projectId, name, projects, onAdded }: QuickAddProps) 
     if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !text.trim()) close();
   }
 
-  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     // Enter on an empty field closes it (the disabled Add button blocks a normal submit).
     if (e.key === 'Escape' || (e.key === 'Enter' && !text.trim())) {
       e.preventDefault();
@@ -108,16 +109,18 @@ export function QuickAdd({ projectId, name, projects, onAdded }: QuickAddProps) 
   return (
     <div className="quick-add">
       <form className="quick-add-form" onSubmit={submit} onBlur={onBlur}>
-        <input
+        {/* A textarea, not an input: Chrome on Android offers saved addresses and cards above the
+            keyboard for text inputs, whatever autocomplete says (see LineInput). */}
+        <LineInput
           ref={inputRef}
           className="quick-add-input"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onValueChange={setText}
           onKeyDown={onKeyDown}
           placeholder={`Add to ${name}…`}
           aria-label={`New task in ${name}`}
           aria-describedby={hintId}
-          autoComplete="off"
+          // The return key, not "done": the field stays open for the next task.
           enterKeyHint="enter"
           maxLength={500}
         />

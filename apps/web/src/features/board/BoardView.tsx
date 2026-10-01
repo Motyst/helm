@@ -42,6 +42,8 @@ import './board.css';
 
 const INBOX_COLLAPSED_KEY = 'helm.inboxCollapsed';
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
+/** After a card moves to another group, how long before it may move straight back. */
+const BOUNCE_MS = 250;
 
 function readInboxCollapsed(): boolean {
   try {
@@ -74,6 +76,7 @@ export function BoardView() {
   const [pending, setPending] = useState<Columns | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const startCols = useRef<Columns>(base);
+  const crossing = useRef<{ locked: boolean; left: string | undefined; at: number }>({ locked: false, left: undefined, at: 0 });
   const cols = dragCols ?? pending ?? base;
 
   // Read by the keyboard coordinate getter, which dnd-kit captures once.
@@ -123,15 +126,30 @@ export function BoardView() {
   }
 
   function onDragOver({ active, over }: DragOverEvent) {
-    if (!over) return;
+    if (!over || crossing.current.locked) return;
     const task = nodes.get(String(active.id));
     if (!task) return;
-    setDragCols((c) => moveAcross(c ?? base, task.id, String(over.id), task.priority));
+    const current = live.current.cols;
+    const next = moveAcross(current, task.id, String(over.id), task.priority);
+    if (next === current) return;
+    // Moving the card reshapes the panels under the finger, so dnd-kit can report the group it just
+    // left in the same frame. Bouncing between the two would loop until React gives up (error 185,
+    // a blank app). So: one move per tick, and no straight move back to the group just left.
+    const from = findContainer(current, task.id);
+    const to = findContainer(next, task.id);
+    const c = crossing.current;
+    if (to === c.left && performance.now() - c.at < BOUNCE_MS) return;
+    crossing.current = { locked: true, left: from, at: performance.now() };
+    setTimeout(() => {
+      crossing.current.locked = false;
+    }, 0);
+    setDragCols(next);
   }
 
   function onDragEnd({ active, over }: DragEndEvent) {
     const task = nodes.get(String(active.id));
     let final = dragCols ?? base;
+    // Lands where the card is shown, even if the bounce guard held back a last move.
     if (over && task) final = reorderWithin(final, task.id, String(over.id));
     setDragCols(null);
     setActiveId(null);

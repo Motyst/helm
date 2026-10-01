@@ -247,3 +247,26 @@ p {
     animation: none !important;
   }
 }
+
+/* Shown by ErrorBoundary instead of a blank screen. */
+.crash {
+  max-width: 28rem;
+  margin: 18vh auto 0;
+  padding: 0 var(--gutter);
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+.crash h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+}
+.crash p {
+  margin: 0;
+}
+.crash-detail {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}

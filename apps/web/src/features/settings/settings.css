@@ -314,3 +314,39 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
+/* ----- Recent updates: compact, latest release open, older folded ----- */
+
+.updates {
+  gap: 0.6rem;
+}
+.updates-release {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: 0 0.75rem;
+  font-size: var(--step--1);
+}
+.updates-release + .updates-release {
+  margin-top: 0.6rem;
+}
+.updates-release time {
+  padding-top: 0.05rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.updates-release ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.2rem;
+}
+.updates-older summary {
+  cursor: pointer;
+  padding: 0.35rem 0;
+  margin-bottom: 0.4rem;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--ink-soft);
+}

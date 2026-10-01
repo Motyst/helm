@@ -33,3 +33,9 @@
     transform: translateY(8px);
   }
 }
+/* Phones: above the floating mic, + and timer, not over them. */
+@media (max-width: 520px) {
+  .toast-region {
+    bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 4.5rem);
+  }
+}
