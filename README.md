@@ -24,6 +24,7 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 - **Done**: what you finished, starting with today, plus an **Activity** feed of every change
   with Undo.
 - **Voice**: say what needs doing and Helm drafts the task (title, project, priority, subtasks).
+  End with a board and a priority ("..., Home, soon") to file it there.
 - **Assistant**: suggests an order for your tasks and answers questions about the board.
 - **AI agents**: hand a task to an agent, which claims it, works on it and sends it back for
   your review.

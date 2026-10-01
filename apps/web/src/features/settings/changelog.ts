@@ -3,6 +3,8 @@ export const CHANGELOG: { date: string; changes: string[] }[] = [
   {
     date: '2026-10-01',
     changes: [
+      'Voice: end with a board and now, soon or someday (“…, Home, soon”) and the task goes there.',
+      'Voice picks the board from the topic when it’s clear, like a dentist visit under Health.',
       'Add a task right inside a panel: type, press Enter, type the next.',
       'Swipe a task right to finish it, left to start or pause it.',
       'Deleting a task is one tap, with Undo.',

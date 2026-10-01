@@ -163,6 +163,47 @@ describe('voice parse', () => {
     expect(requests[0]!.system).not.toContain('Secret');
   });
 
+  it('files tasks under the label said at the end', async () => {
+    const { llm, requests } = fakeLlm({
+      tasks: [
+        task({ title: 'Buy milk', project: 'Work', priority: 'now' }),
+        task({ title: 'Fix the tap', project: 'Work', priority: 'someday' }),
+      ],
+    });
+    const { sendText, services } = await makeApp({ llm });
+    const home = services.projects.create(OWNER, { name: 'Home' });
+    const work = services.projects.create(OWNER, { name: 'Work' });
+
+    const body = (await (await sendText('Buy milk for work, urgent. Fix the tap. Home, soon.')).json()) as VoiceParseResult;
+    // The label is kept from the model, wins for the last task, and leaves the others as said.
+    expect(requests[0]!.messages).toEqual([{ role: 'user', content: 'Buy milk for work, urgent. Fix the tap' }]);
+    expect(body.transcript).toBe('Buy milk for work, urgent. Fix the tap. Home, soon.');
+    expect(body.tasks).toMatchObject([
+      { title: 'Buy milk', projectId: work.id, priority: 'now' },
+      { title: 'Fix the tap', projectId: home.id, priority: 'soon' },
+    ]);
+  });
+
+  it('fills in from the label where the model left it open', async () => {
+    const { llm } = fakeLlm({ tasks: [task({ title: 'A' }), task({ title: 'B', project: 'Hom' })] });
+    const { sendText, services } = await makeApp({ llm });
+    const home = services.projects.create(OWNER, { name: 'Home' });
+    services.projects.create(OWNER, { name: 'Homework' });
+    const body = (await (await sendText('a and b. Inbox, now.')).json()) as VoiceParseResult;
+    expect(body.tasks).toMatchObject([
+      { title: 'A', projectId: null, priority: 'now' },
+      { title: 'B', projectId: null, projectChoices: [], priority: 'now' },
+    ]);
+    expect(home.id).toBeTruthy();
+  });
+
+  it('reads the label without a model too', async () => {
+    const { sendText, services } = await makeApp();
+    const home = services.projects.create(OWNER, { name: 'Home' });
+    const body = (await (await sendText('Water the plants. Home, someday.')).json()) as VoiceParseResult;
+    expect(body).toMatchObject({ parsed: false, tasks: [{ title: 'Water the plants', projectId: home.id, priority: 'someday' }] });
+  });
+
   it('uses the transcript as the title without a model', async () => {
     const { sendText } = await makeApp();
     const body = (await (await sendText('  call   the bank ')).json()) as VoiceParseResult;
@@ -285,5 +326,11 @@ describe('concise drafts', () => {
     const prompt = systemPrompt([], { now: new Date('2026-09-29T10:00:00Z') });
     expect(prompt).toContain('3 to 8 words, at most 60 characters');
     expect(prompt).toContain("Summarise, don't transcribe");
+  });
+
+  it('asks the model to file by topic and to read an end label', () => {
+    const prompt = systemPrompt([], { now: new Date('2026-09-29T10:00:00Z') });
+    expect(prompt).toContain('plainly belongs to one of them by its topic');
+    expect(prompt).toContain('Speakers often end with a label');
   });
 });

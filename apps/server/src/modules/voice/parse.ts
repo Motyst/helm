@@ -1,6 +1,7 @@
 import { ProviderError, type LlmProvider } from '@helm/providers';
 import { PRIORITIES, projectCandidates, type TaskSuggestion } from '@helm/shared';
 import { z } from 'zod';
+import { readTail, type Tail } from './tail.ts';
 
 /** What the model fills in. Plain on purpose: limits are enforced in `clean`. */
 const ModelAnswer = z.object({
@@ -36,7 +37,8 @@ interface NamedProject {
 
 /**
  * Turn a transcript into task suggestions. Without a working model the transcript becomes the
- * title, so what was said is never lost.
+ * title, so what was said is never lost. A label spoken at the end ("…, Home, soon") files the
+ * tasks there, with or without a model.
  */
 export async function draftTasks(
   llm: LlmProvider | null,
@@ -44,13 +46,15 @@ export async function draftTasks(
   projects: NamedProject[],
   o: DraftOptions,
 ): Promise<{ tasks: TaskSuggestion[]; parsed: boolean; notice?: string }> {
-  if (!llm) return { tasks: [plain(transcript)], parsed: false };
+  const tail = readTail(transcript, projects);
+  const said = tail.rest;
+  if (!llm) return { tasks: [fileUnder(plain(said), tail, true)], parsed: false };
 
   let answer: z.output<typeof ModelAnswer>;
   try {
     answer = await llm.object({
       system: systemPrompt(projects, o),
-      messages: [{ role: 'user', content: transcript }],
+      messages: [{ role: 'user', content: said }],
       schema: ModelAnswer,
       name: 'task_drafts',
       signal: o.signal,
@@ -58,14 +62,28 @@ export async function draftTasks(
   } catch (e) {
     if (!(e instanceof ProviderError)) throw e;
     console.warn(`voice: parsing failed (${e.kind}${e.status ? ` ${e.status}` : ''}): ${e.message}`);
-    return { tasks: [plain(transcript)], parsed: false, notice: `Couldn’t fill in the details. ${e.message}` };
+    return { tasks: [fileUnder(plain(said), tail, true)], parsed: false, notice: `Couldn’t fill in the details. ${e.message}` };
   }
   const tasks = answer.tasks
     .slice(0, MAX_TASKS)
     .map((t) => clean(t, projects))
     .filter((t): t is TaskSuggestion => t !== null);
   // The model found nothing task-like: still give the user something to edit.
-  return { tasks: tasks.length ? tasks : [plain(transcript)], parsed: true };
+  if (!tasks.length) tasks.push(plain(said));
+  // The label closes the recording, so it's about the last task for sure, and the others when
+  // they didn't say otherwise.
+  return { tasks: tasks.map((t, i) => fileUnder(t, tail, i === tasks.length - 1)), parsed: true };
+}
+
+/** Apply the spoken label; `always` lets it win over what the model chose. */
+function fileUnder(t: TaskSuggestion, tail: Tail, always: boolean): TaskSuggestion {
+  const out = { ...t };
+  const chosen = t.projectId !== null || t.unmatchedProject !== null || t.projectChoices.length > 0;
+  if (tail.project !== undefined && (always || !chosen)) {
+    Object.assign(out, { projectId: tail.project?.id ?? null, unmatchedProject: null, projectChoices: [] });
+  }
+  if (tail.priority && (always || t.priority === null)) out.priority = tail.priority;
+  return out;
 }
 
 /** No model: the start of what was said is the title, and a long recording is kept whole in the notes. */
@@ -152,10 +170,12 @@ Be concise. People ramble when they talk; the board needs the gist. The longer t
 For each task:
 - title: imperative, 3 to 8 words, at most 60 characters, in the language the note was spoken in. Name the outcome, not the whole story ("Add platform links to social profiles", not "Add a link on each social media profile that is specific to that platform"). Drop filler such as "um", "I need to", "remind me to", "add a task".
 - notes: only details needed to do the task that don't fit the title (who, where, deadlines, specifics), as a short phrase or a few "- " points. Summarise, don't transcribe; drop repetition and thinking aloud. Write dates as the weekday and date, e.g. "Due Friday 26 September". Don't repeat what the title or other fields already hold (project, priority, estimate). null when there's nothing left to add. Never invent details.
-- project: one of the project names below when the note says or clearly means it. "Inbox" if the note says inbox. A new name only when the speaker names a project that isn't listed. Otherwise null.
+- project: one of the project names below when the note names it or clearly means it, or when the task plainly belongs to one of them by its topic (a dentist visit under Health, an invoice under Work). If it could fit several, or none clearly, null. "Inbox" if the note says inbox. A new name only when the speaker names a project that isn't listed.
 - priority: "now" for urgent, today, right away or ASAP. "soon" for this week or soon. "someday" for eventually, one day or no rush. null if not said.
 - estimateMinutes: only when a duration is said ("half an hour" is 30). Otherwise null.
 - subtasks: the steps the speaker lists for this task, a few words each. Otherwise an empty list.
+
+Speakers often end with a label saying where the task goes: a project name and/or a priority word, like "..., Home, soon". Use it for project and priority, and leave it out of the title and notes.
 
 Today is ${today(o)}.
 
