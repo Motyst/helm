@@ -152,6 +152,7 @@ function Group({
                 onEdit={actions.onEdit}
                 onComplete={actions.onComplete}
                 onToggleSubtask={actions.onToggleSubtask}
+                onToggleWork={actions.onToggleWork}
               />
             ) : null;
           })}

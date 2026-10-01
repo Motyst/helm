@@ -15,6 +15,7 @@ import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
 import { upsertTask, useCreateProject, useProjects, useSetAgentState, useTaskAction, useTasks } from '../../lib/queries.ts';
 import { hrefFor } from '../../lib/route.ts';
+import { useDeleteTask } from '../../lib/useDeleteTask.ts';
 import { LineInput } from '../../ui/LineInput.tsx';
 import { agentName } from '../board/agent-badge.ts';
 import { projectIcon } from '../board/project-icon.ts';
@@ -43,6 +44,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const qc = useQueryClient();
+  const deleteTask = useDeleteTask();
   const tasks = useTasks();
   const projects = useProjects();
   const createProject = useCreateProject();
@@ -83,7 +85,6 @@ export function TaskDialog({ target, queued, onClose }: Props) {
     voice?.suggestion.projectChoices ?? [],
   );
   const [newProjectName, setNewProjectName] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [customEstimate, setCustomEstimate] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -199,15 +200,12 @@ export function TaskDialog({ target, queued, onClose }: Props) {
     }
   }
 
+  // One tap: the toast that follows offers Undo.
   async function remove() {
     if (!editing) return;
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     setBusy(true);
     try {
-      upsertTask(qc, await api.deleteTask(editing.id));
+      await deleteTask(editing);
       close();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Couldn’t delete.');
@@ -553,7 +551,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
         <footer className={`editor-foot${editing ? '' : ' is-new'}`}>
           {editing && (
             <button type="button" className="btn btn-quiet btn-danger" disabled={busy} onClick={remove}>
-              {confirmDelete ? 'Confirm delete' : 'Delete'}
+              Delete
             </button>
           )}
           {editing && (

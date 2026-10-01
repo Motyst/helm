@@ -167,6 +167,27 @@ describe('update / move / remove', () => {
     expect(services.tasks.board(o)).toEqual([]);
     expect(errCode(() => services.tasks.get(o, p.id))).toBe('not_found');
   });
+
+  it('restores a deleted task with the subtasks deleted along with it', () => {
+    const { services } = setup();
+    const p = services.tasks.create(o, { title: 'P' });
+    const gone = services.tasks.create(o, { title: 'deleted earlier', parentTaskId: p.id });
+    services.tasks.remove(o, gone.id);
+    services.tasks.create(o, { title: 'c', parentTaskId: p.id });
+    services.tasks.remove(o, p.id);
+    expect(services.tasks.restore(o, p.id).deletedAt).toBeNull();
+    expect(services.tasks.board(o).map((t) => t.title).sort()).toEqual(['P', 'c']);
+    expect(errCode(() => services.tasks.restore(o, 'nope'))).toBe('not_found');
+  });
+
+  it('won’t restore a subtask whose parent is deleted', () => {
+    const { services } = setup();
+    const p = services.tasks.create(o, { title: 'P' });
+    const c = services.tasks.create(o, { title: 'c', parentTaskId: p.id });
+    services.tasks.remove(o, c.id);
+    services.tasks.remove(o, p.id);
+    expect(errCode(() => services.tasks.restore(o, c.id))).toBe('not_found');
+  });
 });
 
 describe('reads', () => {

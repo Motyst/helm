@@ -75,7 +75,7 @@ function queryString(q: object): string {
   return s ? `?${s}` : '';
 }
 
-export type TaskAction = 'start' | 'stop' | 'complete' | 'reopen';
+export type TaskAction = 'start' | 'stop' | 'complete' | 'reopen' | 'restore';
 
 export interface ActivityQuery {
   who?: 'all' | 'agents';

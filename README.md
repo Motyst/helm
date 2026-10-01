@@ -13,7 +13,8 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 
 - **Board**, the home screen: one panel per project, tasks grouped by **Now**, **Soon** and
   **Someday**. Tabs along the top jump to a project; long panels show 10 tasks, then "Show more".
-  Drag tasks between projects and priorities.
+  Drag tasks between projects and priorities; on a phone, swipe a task right to finish it or left
+  to start it.
 - **Tasks** with notes, subtasks and an estimate; pick the project with one tap. One task is in
   progress at a time.
 - **Focus**: the task you're on, time spent vs. the estimate, and what's next, in one of three

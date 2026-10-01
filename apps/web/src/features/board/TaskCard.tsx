@@ -4,12 +4,19 @@ import { useState, type KeyboardEvent } from 'react';
 import type { Task, TaskNode } from '@helm/shared';
 import { formatMinutes } from '../../lib/format.ts';
 import { agentBadge } from './agent-badge.ts';
+import { useSwipe } from './useSwipe.ts';
 
 export interface CardActions {
   onEdit: (task: Task) => void;
-  onComplete: (task: Task) => void;
+  onComplete: (task: Task) => void | Promise<unknown>;
   onToggleSubtask: (sub: Task) => void;
+  /** Start the task, or pause it (or its subtask) if it's in progress. */
+  onToggleWork: (task: TaskNode) => void;
 }
+
+/** In progress itself, or one of its subtasks is. */
+export const isWorking = (task: TaskNode) =>
+  task.status === 'in_progress' || task.subtasks.some((s) => s.status === 'in_progress');
 
 interface CardProps extends CardActions {
   task: TaskNode;
@@ -19,7 +26,7 @@ interface CardProps extends CardActions {
 
 export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSubtask }: CardProps) {
   const [open, setOpen] = useState(false);
-  const active = task.status === 'in_progress' || task.subtasks.some((s) => s.status === 'in_progress');
+  const active = isWorking(task);
   const agent = agentBadge(task);
 
   return (
@@ -27,7 +34,7 @@ export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSu
       <button
         className="card-check"
         aria-label={`Mark done: ${task.title}`}
-        onClick={() => onComplete(task)}
+        onClick={() => void onComplete(task)}
         tabIndex={overlay ? -1 : 0}
       />
       <div className="card-body">
@@ -76,28 +83,49 @@ export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSu
   );
 }
 
-/** A card that can be dragged within and between groups/bins. */
+/**
+ * A card that can be dragged within and between groups/bins (long press on touch), and swiped:
+ * right to mark it done, left to start or pause it.
+ */
 export function SortableTaskCard(props: CardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.task.id,
   });
   const { onKeyDown, ...pointerListeners } = listeners ?? {};
+  const working = isWorking(props.task);
+  const swipe = useSwipe({
+    enabled: !isDragging,
+    onRight: () => props.onComplete(props.task),
+    onLeft: () => props.onToggleWork(props.task),
+  });
+  const side = swipe.dx > 0 ? 'done' : 'work';
 
   return (
     <li
       ref={setNodeRef}
-      className={`card-slot ${isDragging ? 'is-placeholder' : ''}`}
+      className={`card-slot ${isDragging ? 'is-placeholder' : ''} ${swipe.dx ? 'is-swiping' : ''}`}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       aria-roledescription="draggable task"
       aria-label={`${props.task.title}. Press space to move.`}
       {...pointerListeners}
+      {...swipe.handlers}
       // Keyboard drag only from the card itself, not when Enter/Space hits a button inside it.
       onKeyDown={(e: KeyboardEvent<HTMLLIElement>) => {
         if (e.target === e.currentTarget) onKeyDown?.(e);
       }}
     >
-      <TaskCard {...props} />
+      {swipe.dx !== 0 && (
+        <div className={`swipe-under swipe-${side}${swipe.past ? ' is-past' : ''}`} aria-hidden="true">
+          <span className="swipe-label">{side === 'done' ? '✓ Done' : working ? '❚❚ Pause' : '▶ Start'}</span>
+        </div>
+      )}
+      <div
+        className={`card-swipe${swipe.settling ? ' is-settling' : ''}`}
+        style={swipe.dx ? { transform: `translateX(${swipe.dx}px)` } : undefined}
+      >
+        <TaskCard {...props} />
+      </div>
     </li>
   );
 }

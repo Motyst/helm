@@ -281,9 +281,11 @@
 /* ----- Task cards ----- */
 
 .card-slot {
+  position: relative;
   list-style: none;
   border-radius: 12px;
-  touch-action: manipulation;
+  /* Vertical moves scroll the page; sideways ones are the card's swipe (see useSwipe). */
+  touch-action: pan-y pinch-zoom;
   cursor: grab;
 }
 .card-slot:focus-visible {
@@ -455,4 +457,59 @@
 .card-subs .is-done span {
   color: var(--ink-soft);
   text-decoration: line-through;
+}
+
+/* ----- Swipe: right marks done, left starts or pauses ----- */
+
+.card-slot.is-swiping {
+  overflow: hidden;
+}
+.card-swipe {
+  position: relative;
+  z-index: 1;
+}
+.card-swipe.is-settling {
+  transition: transform 160ms ease-out;
+}
+.swipe-under {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 1.1rem;
+  border-radius: 12px;
+  font-size: var(--step--1);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.swipe-done {
+  justify-content: flex-start;
+  background: color-mix(in oklab, var(--ink) 14%, var(--water));
+  color: var(--ink);
+}
+.swipe-done.is-past {
+  background: var(--ink);
+  color: var(--water);
+}
+.swipe-work {
+  justify-content: flex-end;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.swipe-work.is-past {
+  background: var(--accent);
+  color: var(--water);
+}
+.swipe-label {
+  transition: transform 120ms;
+}
+.is-past .swipe-label {
+  transform: scale(1.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-swipe.is-settling,
+  .swipe-label {
+    transition: none;
+  }
 }

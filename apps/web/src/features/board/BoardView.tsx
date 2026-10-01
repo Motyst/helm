@@ -14,8 +14,9 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { buildTree, PRIORITIES, type Priority, type Project, type Task } from '@helm/shared';
+import { buildTree, PRIORITIES, type Priority, type Project, type Task, type TaskNode } from '@helm/shared';
 import { useMoveTask, useProjects, useTaskAction, useTasks, useUpdateProject } from '../../lib/queries.ts';
+import { hrefFor } from '../../lib/route.ts';
 import { useCompleteTask } from '../../lib/useCompleteTask.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useEditor } from '../task-editor/EditorContext.tsx';
@@ -169,10 +170,31 @@ export function BoardView() {
     if (p) updateProject.mutate({ id: p.id, patch: { collapsed: !p.collapsed } });
   }
 
+  /** Swiped left: start the task, or pause whatever part of it is in progress. */
+  function toggleWork(t: TaskNode) {
+    const working = t.status === 'in_progress' ? t : t.subtasks.find((s) => s.status === 'in_progress');
+    action.mutate(
+      { id: working?.id ?? t.id, action: working ? 'stop' : 'start' },
+      {
+        onSuccess: () =>
+          toast(
+            working
+              ? { message: `Paused: ${t.title}` }
+              : {
+                  message: `Started: ${t.title}`,
+                  action: { label: 'Focus', run: () => (window.location.hash = hrefFor('focus')) },
+                },
+          ),
+        onError: (err) => toast({ message: `Couldn’t ${working ? 'pause' : 'start'} “${t.title}”: ${err.message}` }),
+      },
+    );
+  }
+
   const cardActions = {
     onEdit: (t: Task) => editor.openEdit(t.id),
-    onComplete: (t: Task) => void complete(t),
+    onComplete: (t: Task) => complete(t),
     onToggleSubtask: (s: Task) => action.mutate({ id: s.id, action: s.status === 'done' ? 'reopen' : 'complete' }),
+    onToggleWork: toggleWork,
   };
 
   const groupsFor = (bin: string) =>

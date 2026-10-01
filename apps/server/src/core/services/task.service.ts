@@ -364,6 +364,26 @@ export class TaskService {
     });
   }
 
+  /** Undo a delete: bring the task back with the subtasks deleted along with it. */
+  restore(p: Principal, id: string): Task {
+    return mutate(this.ctx, p, (tx, emit) => {
+      const row = tx.select().from(tasks).where(eq(tasks.id, id)).get();
+      if (!row) throw notFound('Task');
+      assertWrite(p, row.projectId);
+      if (!row.deletedAt) return toTask(row);
+      if (row.parentTaskId) this.getRow(tx, row.parentTaskId);
+      const deletedWith = tx
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.parentTaskId, row.id), eq(tasks.deletedAt, row.deletedAt)))
+        .all();
+      const restored = this.write(tx, row.id, { deletedAt: null });
+      emitTask(emit, 'restored', restored);
+      for (const child of deletedWith) emitTask(emit, 'restored', this.write(tx, child.id, { deletedAt: null }));
+      return toTask(restored);
+    });
+  }
+
   // ---------- Status rules ----------
 
   /**
