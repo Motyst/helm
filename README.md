@@ -38,6 +38,7 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 </p>
 
 Desktop keys: **N** new task, **V** voice, **A** assistant, **B** / **F** / **D** to switch views.
+Type `:` and a word in any text field for emoji (`:fire` → 🔥).
 
 ## Quick start
 

@@ -1,0 +1,40 @@
+/* The :emoji list (EmojiComplete). A popover, so it sits in the top layer above dialogs. */
+.emoji-pop {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 16rem;
+  max-height: 19rem;
+  overflow-y: auto;
+  padding: 0.3rem;
+  border: 1.5px solid var(--contour-faint);
+  border-radius: 14px;
+  background: var(--water);
+  color: var(--ink);
+  box-shadow: 0 16px 36px -14px rgb(8 20 30 / 0.45);
+}
+.emoji-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.emoji-option.is-active {
+  background: var(--accent-soft);
+}
+.emoji-glyph {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+.emoji-name {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.emoji-option.is-active .emoji-name {
+  color: var(--ink);
+}

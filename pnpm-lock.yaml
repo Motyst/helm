@@ -101,6 +101,9 @@ importers:
       '@tanstack/react-query-persist-client':
         specifier: ^5.103.2
         version: 5.103.2(@tanstack/react-query@5.103.2(react@19.3.0))(react@19.3.0)
+      emojilib:
+        specifier: ^4.0.3
+        version: 4.0.3
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -2165,6 +2168,9 @@ packages:
 
   electron-to-chromium@1.5.438:
     resolution: {integrity: sha512-AN9xMU1hJiT65LkCUPL1DZm5TCbOPb2Qsm5pYwFLEXp6/qj9SdT4yMiqs7Qqstwvkn1zF7l36SRGt+s6XcJ0FA==}
+
+  emojilib@4.0.3:
+    resolution: {integrity: sha512-KbWiYre9aRSaPbHrHZIz9zmoM+21LAsK1VFJtnTh1VCtWE/rNMDviGhQTmselFl95dhqtGlY22iH0leG5BuW0g==}
 
   encodeurl@2.0.0:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
@@ -5059,6 +5065,8 @@ snapshots:
       jake: 10.9.4
 
   electron-to-chromium@1.5.438: {}
+
+  emojilib@4.0.3: {}
 
   encodeurl@2.0.0: {}
 

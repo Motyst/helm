@@ -11,6 +11,7 @@ import { App } from './app/App.tsx';
 import { ApiError } from './lib/api.ts';
 import { PERSISTED_KEYS, clearUserData, keys } from './lib/queries.ts';
 import './ui/theme.css';
+import { EmojiComplete } from './ui/EmojiComplete.tsx';
 import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
 import { Scenery } from './ui/Scenery.tsx';
 import { startThemes } from './ui/themes.ts';
@@ -88,6 +89,7 @@ createRoot(document.getElementById('root')!).render(
       <Scenery />
       <ErrorBoundary>
         <App />
+        <EmojiComplete />
       </ErrorBoundary>
     </PersistQueryClientProvider>
   </StrictMode>,

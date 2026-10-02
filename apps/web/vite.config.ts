@@ -50,7 +50,8 @@ export default defineConfig({
         // App shell only. Data always comes live from /api (including the SSE stream), never from the cache.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // Extra font subsets still load on demand when a page needs them.
-        globIgnores: ['**/*-vietnamese-*'],
+        // The :emoji list is for computers only and loads when first used, so phones don't download it.
+        globIgnores: ['**/*-vietnamese-*', '**/emoji-en-US-*'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/mcp/],
         cleanupOutdatedCaches: true,

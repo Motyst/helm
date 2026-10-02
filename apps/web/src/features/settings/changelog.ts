@@ -1,6 +1,10 @@
 /** What changed in the app, newest first, for Settings → Recent updates. Add to the top with each release. */
 export const CHANGELOG: { date: string; changes: string[] }[] = [
   {
+    date: '2026-10-02',
+    changes: ['On a computer, type : and a word (like :fire) to add an emoji.'],
+  },
+  {
     date: '2026-10-01',
     changes: [
       'Voice: end with a board and now, soon or someday (“…, Home, soon”) and the task goes there.',

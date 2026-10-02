@@ -23,6 +23,7 @@
     "@tanstack/query-sync-storage-persister": "^5.103.2",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-query-persist-client": "^5.103.2",
+    "emojilib": "^4.0.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
