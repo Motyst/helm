@@ -1,10 +1,12 @@
 import { SceneArt } from '../../ui/Scenery.tsx';
 import { useId } from 'react';
+import { setKeyWordsOn, useKeyWordsOn } from '../../ui/KeyedTitle.tsx';
 import { THEMES, setPanel, setScenery, setTheme, usePanel, useScenery, useTheme } from '../../ui/themes.ts';
 
 export function ThemeSection() {
   const theme = useTheme();
   const scenery = useScenery();
+  const keyWords = useKeyWordsOn();
   const panel = usePanel();
   const panelId = useId();
 
@@ -45,6 +47,13 @@ export function ThemeSection() {
         <span>
           <strong>Show the landscape</strong>
           <span className="choice-hint">A woodblock-style picture of the theme along the bottom of the screen.</span>
+        </span>
+      </label>
+      <label className="choice">
+        <input type="checkbox" checked={keyWords} onChange={(e) => setKeyWordsOn(e.target.checked)} />
+        <span>
+          <strong>Bold key words</strong>
+          <span className="choice-hint">The words each task is about stand out, so a board is quicker to skim. Picked by AI.</span>
         </span>
       </label>
       <div className="field panel-strength">

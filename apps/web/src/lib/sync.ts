@@ -50,7 +50,7 @@ export function useLiveSync(enabled: boolean): SyncState {
         if (e.action === 'restored') void qc.invalidateQueries({ queryKey: keys.tasks });
       } else if (e.entity === 'timer') setTimer(qc, e.data as Timer);
       else upsertToken(qc, e.data as ApiToken);
-      if (e.entity === 'task' || e.entity === 'project') refreshActivity(qc);
+      if ((e.entity === 'task' && e.action !== 'keyed') || e.entity === 'project') refreshActivity(qc);
       // A snapshot request in flight may predate this event; fetch again once it lands.
       const key = keys[e.entity === 'task' ? 'tasks' : e.entity === 'project' ? 'projects' : e.entity === 'timer' ? 'timer' : 'tokens'];
       if (qc.isFetching({ queryKey: key }) > 0) void qc.invalidateQueries({ queryKey: key });

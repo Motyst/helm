@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MAX_TODAY_MAIN, type Priority, type TaskNode, type TodaySlot } from '@helm/shared';
 import { formatMinutes } from '../../lib/format.ts';
 import { useProjects, useSetToday } from '../../lib/queries.ts';
+import { KeyedTitle } from '../../ui/KeyedTitle.tsx';
 import { LineInput } from '../../ui/LineInput.tsx';
 import { projectIcon } from '../board/project-icon.ts';
 
@@ -72,7 +73,9 @@ export function PickSheet({ roots, mainFull, onClose }: { roots: TaskNode[]; mai
               {tasks.map((t) => (
                 <li key={t.id}>
                   <div className="today-sheet-task">
-                    <span className="today-sheet-title">{t.title}</span>
+                    <span className="today-sheet-title">
+                      <KeyedTitle title={t.title} words={t.keyWords} />
+                    </span>
                     <span className={`today-sheet-meta prio-${t.priority}`}>
                       {PRIORITY_LABEL[t.priority]}
                       {t.estimateMinutes ? ` · ${formatMinutes(t.estimateMinutes)}` : ''}

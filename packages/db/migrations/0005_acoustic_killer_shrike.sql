@@ -1,0 +1,1 @@
+ALTER TABLE `tasks` ADD `key_words` text;

@@ -3,6 +3,7 @@ export const CHANGELOG: { date: string; changes: string[] }[] = [
   {
     date: '2026-10-02',
     changes: [
+      'Key words in bold: the words each task is about stand out, so a board is quicker to skim. AI picks them; turn it off in Settings.',
       'Today: a tab for the day’s plan, with up to 3 main tasks and secondary ones if there’s time.',
       'Put board tasks on Today with ☀, or add tasks that live only on Today.',
       'Unfinished tasks stay on Today the next day, marked with the day they were planned.',

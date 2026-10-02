@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Task, TaskNode } from '@helm/shared';
 import { formatMinutes } from '../../lib/format.ts';
+import { KeyedTitle } from '../../ui/KeyedTitle.tsx';
 import { agentBadge } from './agent-badge.ts';
 import { useSwipe } from './useSwipe.ts';
 
@@ -60,7 +61,7 @@ export function TaskCard({
       />
       <div className="card-body">
         <button className="card-title" onClick={() => onEdit(task)} tabIndex={overlay ? -1 : 0}>
-          {task.title}
+          <KeyedTitle title={task.title} words={task.keyWords} />
         </button>
         <div className="card-meta">
           {active && <span className="card-live">In progress</span>}

@@ -134,6 +134,8 @@
   /* Today's marks: a low sun, drawn toward the ink so it reads on light and dark themes alike. */
   --sun: color-mix(in oklab, #dc9a1a 76%, var(--ink));
   --sun-soft: color-mix(in oklab, #dc9a1a 20%, transparent);
+  /* Key words in titles: a deep blue, drawn toward the ink like the sun. */
+  --key: color-mix(in oklab, #2a78b5 68%, var(--ink));
 }
 
 *,
@@ -272,4 +274,13 @@ p {
   font-size: var(--step--1);
   color: var(--ink-soft);
   overflow-wrap: anywhere;
+}
+
+/* Key words in task titles (KeyedTitle): the rest of the title steps back so they carry the line. */
+.kw {
+  font-weight: 800;
+  color: var(--key);
+}
+:where(.card-title, .today-sheet-title, .fx-then-title):has(.kw) {
+  font-weight: 420;
 }

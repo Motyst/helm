@@ -13,6 +13,7 @@ import { assistantModule } from './modules/assistant/index.ts';
 import { mcpModule } from './modules/mcp/index.ts';
 import { timerModule } from './modules/timer/index.ts';
 import { voiceModule } from './modules/voice/index.ts';
+import { keyWordsModule } from './modules/key-words/index.ts';
 
 const config = loadConfig();
 const { db, backup, close } = openDb({ path: config.dbPath, migrationsFolder: config.migrationsDir });
@@ -25,7 +26,7 @@ const stopBackups =
 const providers = createProviders(config.ai);
 for (const reason of Object.values(providers.reasons)) if (reason) console.log(`AI: ${reason}`);
 
-const app = await createApp({ config, ctx, services, providers, modules: [mcpModule, voiceModule, assistantModule, timerModule] });
+const app = await createApp({ config, ctx, services, providers, modules: [mcpModule, voiceModule, assistantModule, timerModule, keyWordsModule] });
 
 // Production: serve the built PWA and fall back to index.html for client-side routes.
 const webRoot = config.webDist ? resolve(config.webDist) : null;

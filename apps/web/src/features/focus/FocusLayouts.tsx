@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Focus, TaskNode } from '@helm/shared';
 import { clockTime, formatMinutes } from '../../lib/format.ts';
 import { hrefFor } from '../../lib/route.ts';
+import { KeyedTitle } from '../../ui/KeyedTitle.tsx';
 import { ProjectLabel, type ProjectMap } from '../../ui/ProjectLabel.tsx';
 import { TimerCard } from '../timer/TimerCard.tsx';
 import { useTimerState } from '../timer/TimerContext.tsx';
@@ -122,7 +123,7 @@ export function FocusVital({ focus, projects, now, openCount, run, onEdit, onCom
                 <div className="fx-vital-main">
                   <h2 className="fx-vital-title">
                     <button className="fx-title-btn" onClick={() => onEdit(t.id)}>
-                      {t.title}
+                      <KeyedTitle title={t.title} words={t.keyWords} />
                     </button>
                   </h2>
                   <p className="fx-vital-meta">
@@ -157,7 +158,7 @@ export function FocusVital({ focus, projects, now, openCount, run, onEdit, onCom
                 <div className="fx-vital-main">
                   <h2 className="fx-vital-title">
                     <button className="fx-title-btn" onClick={() => onEdit(t.id)}>
-                      {t.title}
+                      <KeyedTitle title={t.title} words={t.keyWords} />
                     </button>
                   </h2>
                   <p className="fx-vital-meta">
@@ -359,7 +360,9 @@ function ThenLine({ task, onEdit, centered = false }: { task: TaskNode; onEdit: 
   return (
     <button className={`fx-then${centered ? ' is-centered' : ''}`} onClick={() => onEdit(task.id)}>
       <span className="fx-then-label">Then</span>
-      <span className="fx-then-title">{task.title}</span>
+      <span className="fx-then-title">
+        <KeyedTitle title={task.title} words={task.keyWords} />
+      </span>
       {task.estimateMinutes && <span>{formatMinutes(task.estimateMinutes)}</span>}
     </button>
   );

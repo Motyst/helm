@@ -19,7 +19,8 @@ const keyOf = (e: EventRow) => e.batchId ?? `e${e.id}`;
 const inBatch = (key: string): SQL =>
   /^e\d+$/.test(key) ? and(eq(events.id, Number(key.slice(1))), sql`${events.batchId} is null`)! : eq(events.batchId, key);
 
-const TRACKED = inArray(events.entity, ['task', 'project']);
+/** Key words picked in the background (`keyed`) aren't changes anyone made: left out, never undone. */
+const TRACKED = and(inArray(events.entity, ['task', 'project']), ne(events.action, 'keyed'));
 const date = (iso: string | null) => (iso ? new Date(iso) : null);
 
 /**
@@ -151,6 +152,7 @@ export class ActivityService {
       .where(
         and(
           gt(events.id, lastId),
+          ne(events.action, 'keyed'),
           or(...evs.map((e) => and(eq(events.entity, e.entity), eq(events.entityId, e.entityId)))),
         ),
       )
@@ -197,6 +199,7 @@ export class ActivityService {
         today: before.today ?? null,
         todayAt: date(before.todayAt ?? null),
         todayOnly: before.todayOnly ?? false,
+        keyWords: before.keyWords ?? null,
       };
       action = cur.deletedAt && !before.deletedAt ? 'restored' : !cur.deletedAt && before.deletedAt ? 'deleted' : 'updated';
     }

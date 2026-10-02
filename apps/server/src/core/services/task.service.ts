@@ -31,6 +31,9 @@ import { getLiveProject } from './project.service.ts';
 
 type Patch = Partial<Omit<TaskRow, 'id' | 'createdAt'>>;
 
+/** Who key-word picks are recorded as. */
+const KEY_WORDS: Principal = { kind: 'owner', via: 'helm' };
+
 const NOTES_MAX = 20_000;
 
 export class TaskService {
@@ -212,7 +215,11 @@ export class TaskService {
       assertWrite(p, row.projectId);
 
       const fields: Patch = {};
-      if (patch.title !== undefined) fields.title = patch.title;
+      if (patch.title !== undefined && patch.title !== row.title) {
+        fields.title = patch.title;
+        // Picked again for the new title (see the key words module).
+        fields.keyWords = null;
+      }
       if (patch.notes !== undefined && patch.notes !== row.notes) {
         // Agents may add to notes but never rewrite or clear what's there.
         if (p.kind === 'token' && row.notes && !patch.notes?.startsWith(row.notes)) {
@@ -247,6 +254,43 @@ export class TaskService {
       }
       if (patch.status !== undefined) row = this.transition(tx, emit, row, this.checkStatusChange(p, row, patch.status));
       return toTask(row);
+    });
+  }
+
+  // ---------- Key words (written by the server, not by people) ----------
+
+  /** Open top-level tasks whose key words haven't been picked yet, oldest first. */
+  needingKeyWords(limit: number): Pick<Task, 'id' | 'title' | 'projectId'>[] {
+    return this.ctx.db
+      .select({ id: tasks.id, title: tasks.title, projectId: tasks.projectId })
+      .from(tasks)
+      .where(
+        and(isNull(tasks.keyWords), isNull(tasks.parentTaskId), isNull(tasks.deletedAt), ne(tasks.status, 'done')),
+      )
+      .orderBy(asc(tasks.createdAt))
+      .limit(limit)
+      .all();
+  }
+
+  /** Titles of open top-level tasks, for telling a title's rare words from its common ones. */
+  openTitles(): { projectId: string | null; title: string }[] {
+    return this.ctx.db
+      .select({ projectId: tasks.projectId, title: tasks.title })
+      .from(tasks)
+      .where(and(isNull(tasks.parentTaskId), isNull(tasks.deletedAt), ne(tasks.status, 'done')))
+      .all();
+  }
+
+  /**
+   * Store the key words picked for `title`. Skipped if the title changed meanwhile (it gets its
+   * own pick). Recorded as `keyed`, which the activity log leaves out.
+   */
+  setKeyWords(id: string, title: string, words: string[]): void {
+    mutate(this.ctx, KEY_WORDS, (tx, emit) => {
+      const row = tx.select().from(tasks).where(eq(tasks.id, id)).get();
+      if (!row || row.title !== title || row.deletedAt) return;
+      const updated = tx.update(tasks).set({ keyWords: words }).where(eq(tasks.id, id)).returning().get()!;
+      emitTask(emit, 'keyed', updated);
     });
   }
 

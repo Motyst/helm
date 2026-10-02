@@ -61,6 +61,8 @@ export const Task = z.object({
   todayAt: z.string().nullable(),
   /** Added straight to Today: lives only there, never on the board. */
   todayOnly: z.boolean(),
+  /** Words of the title shown in bold for skimming, picked by the server. null = not picked yet. */
+  keyWords: z.array(z.string()).nullable().optional(),
 });
 export type Task = z.infer<typeof Task>;
 

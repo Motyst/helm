@@ -19,7 +19,8 @@ change it through MCP or a REST API. Changes show up everywhere at once.
   Put board tasks on it with ☀, or add tasks that live only there. Unfinished ones carry over to
   the next day, marked as such.
 - **Tasks** with notes, subtasks and an estimate; pick the project with one tap. One task is in
-  progress at a time.
+  progress at a time. The words each task is about show in bold, picked by AI, so a board is
+  quick to skim.
 - **Focus**: the task you're on, time spent vs. the estimate, and what's next (Today's main tasks
   first), in one of three layouts (One thing, Vital three, Compass).
 - **Timer** that runs on the server, so every device shows the same countdown, with a push

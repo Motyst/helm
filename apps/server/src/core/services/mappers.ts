@@ -25,6 +25,7 @@ export function toTask(r: TaskRow): Task {
     today: r.today ?? null,
     todayAt: iso(r.todayAt),
     todayOnly: r.todayOnly,
+    keyWords: r.keyWords ?? null,
   };
 }
 

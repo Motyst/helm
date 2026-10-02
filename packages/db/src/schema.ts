@@ -45,6 +45,8 @@ export const tasks = sqliteTable(
     todayAt: ts('today_at'),
     /** Added straight to Today: kept off the board. */
     todayOnly: integer('today_only', { mode: 'boolean' }).notNull().default(false),
+    /** Words of the title to show in bold (JSON array); null = not picked yet. */
+    keyWords: text('key_words', { mode: 'json' }).$type<string[]>(),
   },
   (t) => [
     index('tasks_parent_idx').on(t.parentTaskId),
