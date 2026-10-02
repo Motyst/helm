@@ -21,6 +21,9 @@ const task = (t: Partial<Task>): Task => ({
   deletedAt: null,
   agentState: null,
   agentClaimedBy: null,
+  today: null,
+  todayAt: null,
+  todayOnly: false,
   ...t,
 });
 const tasks = [task({ id: 'r', title: 'Report', position: 'a1' }), task({ id: 'm', title: 'Mail', position: 'a0', priority: 'now' })];

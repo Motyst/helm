@@ -584,6 +584,42 @@
   text-decoration: line-through;
 }
 
+/* The sun button: on Today or not. Faint until hovered or on; says Main for the day's main tasks. */
+.card-sun {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  margin: -0.35rem -0.4rem -0.35rem 0;
+  padding: 0 0.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--contour);
+  font-size: var(--step--1);
+  font-weight: 800;
+}
+.card-sun:hover {
+  color: var(--sun);
+  border-color: var(--contour-faint);
+}
+.card-sun.is-on {
+  color: var(--sun);
+  background: var(--sun-soft);
+}
+@media (hover: hover) {
+  .card-sun:not(.is-on) {
+    opacity: 0.45;
+  }
+  .card:hover .card-sun,
+  .card-sun:focus-visible {
+    opacity: 1;
+  }
+}
+
 /* ----- Swipe: right marks done, left starts or pauses ----- */
 
 .card-slot.is-swiping {

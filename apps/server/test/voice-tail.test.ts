@@ -40,6 +40,14 @@ describe('spoken label at the end', () => {
     expect(read('Go to home')).toEqual({ rest: 'Go to home' });
   });
 
+  it('reads “today”, and “today, main”', () => {
+    expect(read('Call the bank today')).toEqual({ rest: 'Call the bank', today: 'side' });
+    expect(read('Finish the slides. Home, today, main.')).toEqual({ rest: 'Finish the slides', project: home, today: 'main' });
+    expect(read('Finish the slides, main task for today, now')).toEqual({ rest: 'Finish the slides', today: 'main', priority: 'now' });
+    expect(read('Pay rent, put it on today')).toEqual({ rest: 'Pay rent', today: 'side' });
+    expect(read('Today')).toEqual({ rest: 'Today' });
+  });
+
   it('files under Inbox when said', () => {
     expect(read('Look into solar panels. Inbox.')).toEqual({ rest: 'Look into solar panels', project: null });
   });

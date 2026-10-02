@@ -131,6 +131,9 @@
   --gutter: clamp(1rem, 0.5rem + 2.5vw, 3rem);
   --radius-control: 999px;
   --radius-panel: 14px;
+  /* Today's marks: a low sun, drawn toward the ink so it reads on light and dark themes alike. */
+  --sun: color-mix(in oklab, #dc9a1a 76%, var(--ink));
+  --sun-soft: color-mix(in oklab, #dc9a1a 20%, transparent);
 }
 
 *,

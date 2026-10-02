@@ -1,21 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { buildTree, computeFocus } from '@helm/shared';
 import { useProjects, useTaskAction, useTasks } from '../../lib/queries.ts';
 import { useCompleteTask } from '../../lib/useCompleteTask.ts';
+import { useNow } from '../../lib/useNow.ts';
 import type { ProjectMap } from '../../ui/ProjectLabel.tsx';
 import { useEditor } from '../task-editor/EditorContext.tsx';
 import { useFocusLayout } from './focus-layout.ts';
 import { FocusCompass, FocusOne, FocusVital, type LayoutProps } from './FocusLayouts.tsx';
 import './focus.css';
-
-function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
-}
 
 export function FocusView() {
   const tasks = useTasks();

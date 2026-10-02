@@ -8,6 +8,7 @@ import {
   SetAgentStateInput,
   DoneLogQuery,
   INBOX,
+  MAX_TODAY_MAIN,
   MoveTaskInput,
   UpdateTaskInput,
   byPosition,
@@ -17,6 +18,7 @@ import {
   type Focus,
   type Task,
   type TaskStatus,
+  type TodaySlot,
 } from '@helm/shared';
 import { generateNKeysBetween } from 'fractional-indexing';
 import { ulid } from 'ulidx';
@@ -147,6 +149,11 @@ export class TaskService {
       }
       assertWrite(p, projectId);
 
+      const today = i.today ?? null;
+      if (today && parent) throw invalid('Only top-level tasks go on Today.');
+      if (i.todayOnly && !today) throw invalid('A Today-only task needs a place on Today: main or side.');
+      if (today === 'main') this.assertRoomInMain(tx);
+
       const depth = parent ? this.depthOf(tx, parent) + 1 : 0;
       if (i.subtasks?.length && depth + 1 > this.ctx.rules.maxSubtaskDepth) {
         throw invalid(`Subtasks can be nested at most ${this.ctx.rules.maxSubtaskDepth} level(s) deep`);
@@ -159,6 +166,8 @@ export class TaskService {
         estimateMinutes?: number | null;
         parentTaskId: string | null;
         handOff?: boolean;
+        today?: TodaySlot | null;
+        todayOnly?: boolean;
       }) => {
         const now = this.ctx.now();
         const row = tx
@@ -175,6 +184,9 @@ export class TaskService {
             position: keyAfter(this.lastSiblingPosition(tx, values.parentTaskId)),
             source,
             agentState: values.handOff ? (i.agentState ?? null) : null,
+            today: values.today ?? null,
+            todayAt: values.today ? now : null,
+            todayOnly: values.todayOnly ?? false,
             createdAt: now,
             updatedAt: now,
           })
@@ -184,8 +196,8 @@ export class TaskService {
         return row;
       };
 
-      const row = insert({ ...i, parentTaskId: parent?.id ?? null, handOff: true });
-      for (const sub of i.subtasks ?? []) insert({ ...sub, parentTaskId: row.id });
+      const row = insert({ ...i, parentTaskId: parent?.id ?? null, handOff: true, today, todayOnly: i.todayOnly });
+      for (const sub of i.subtasks ?? []) insert({ title: sub.title, estimateMinutes: sub.estimateMinutes, parentTaskId: row.id });
 
       // A done parent can't have open subtasks.
       if (parent?.status === 'done') this.transition(tx, emit, parent, 'todo');
@@ -213,6 +225,16 @@ export class TaskService {
       if (patch.projectId !== undefined && patch.projectId !== row.projectId) {
         this.checkProjectChange(tx, p, row, patch.projectId);
         fields.projectId = patch.projectId;
+      }
+      if (patch.today !== undefined && patch.today !== row.today) {
+        if (row.parentTaskId) throw invalid('Only top-level tasks go on Today.');
+        if (patch.today && row.status === 'done') throw invalid('This task is already done.');
+        if (patch.today === 'main') this.assertRoomInMain(tx);
+        fields.today = patch.today;
+        // Moving between main and side keeps the day it was planned for.
+        fields.todayAt = patch.today === null ? null : row.today ? row.todayAt : this.ctx.now();
+        // Taken off Today, a Today-only task joins its board instead of vanishing.
+        if (patch.today === null && row.todayOnly) fields.todayOnly = false;
       }
 
       if (Object.keys(fields).length > 0) {
@@ -418,6 +440,18 @@ export class TaskService {
       if (parent.status === 'done') this.transition(tx, emit, parent, 'todo');
     }
     return updated;
+  }
+
+  /** Main is for the few things that make the day; done ones don't count. */
+  private assertRoomInMain(tx: Tx): void {
+    const open = tx
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(and(eq(tasks.today, 'main'), ne(tasks.status, 'done'), isNull(tasks.deletedAt)))
+      .all().length;
+    if (open >= MAX_TODAY_MAIN) {
+      throw new HelmError('conflict', `Today already has ${MAX_TODAY_MAIN} main tasks. Move one to secondary first.`);
+    }
   }
 
   private makeRoomToStart(tx: Tx, emit: Emit, startingId: string): void {

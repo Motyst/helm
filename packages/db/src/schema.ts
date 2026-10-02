@@ -39,6 +39,12 @@ export const tasks = sqliteTable(
     agentState: text('agent_state', { enum: ['ready', 'working', 'review'] }),
     /** Actor that claimed it (e.g. `token:Claude Code`). */
     agentClaimedBy: text('agent_claimed_by'),
+    /** On the Today list: main | side; null = not. Stays set once done, for "Done today". */
+    today: text('today', { enum: ['main', 'side'] }),
+    /** When it went on Today; older than the start of today = carried over. */
+    todayAt: ts('today_at'),
+    /** Added straight to Today: kept off the board. */
+    todayOnly: integer('today_only', { mode: 'boolean' }).notNull().default(false),
   },
   (t) => [
     index('tasks_parent_idx').on(t.parentTaskId),

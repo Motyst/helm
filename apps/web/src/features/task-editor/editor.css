@@ -415,6 +415,13 @@ button.project-chip-new {
   background: var(--accent);
   border-color: var(--accent);
 }
+.seg-today-main input:checked + span {
+  background: var(--sun);
+  border-color: var(--sun);
+}
+.seg input:disabled + span {
+  opacity: 0.4;
+}
 .seg input:focus-visible + span,
 .chip input:focus-visible + span {
   outline: 3px solid var(--accent);

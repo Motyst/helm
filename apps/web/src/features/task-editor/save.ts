@@ -1,4 +1,4 @@
-import type { Priority, Task, TaskSource, TaskSuggestion, UpdateTaskInput } from '@helm/shared';
+import type { Priority, Task, TaskSource, TaskSuggestion, TodaySlot, UpdateTaskInput } from '@helm/shared';
 import { api } from '../../lib/api.ts';
 
 export interface SubtaskDraft {
@@ -19,6 +19,8 @@ export interface TaskDraft {
   subtasks: SubtaskDraft[];
   /** Handed to agents (any hand-off state counts; only ready ↔ none is edited in the form). */
   agentReady: boolean;
+  /** On Today, as main or side; null = not. */
+  today: TodaySlot | null;
 }
 
 export function draftFrom(task: Task, subtasks: Task[]): TaskDraft {
@@ -30,6 +32,7 @@ export function draftFrom(task: Task, subtasks: Task[]): TaskDraft {
     estimateMinutes: task.estimateMinutes,
     subtasks: subtasks.map((s) => ({ key: s.id, id: s.id, title: s.title, done: s.status === 'done' })),
     agentReady: task.agentState !== null,
+    today: task.today,
   };
 }
 
@@ -45,6 +48,7 @@ export function draftFromSuggestion(s: TaskSuggestion): TaskDraft {
     estimateMinutes: s.estimateMinutes,
     subtasks: s.subtasks.map((title) => ({ key: `voice-${++voiceSeq}`, title, done: false })),
     agentReady: false,
+    today: s.today,
   };
 }
 
@@ -63,6 +67,7 @@ export function createFromDraft(d: TaskDraft, parentTaskId?: string, source?: Ta
     source,
     subtasks: subtasks.length ? subtasks : undefined,
     agentState: d.agentReady ? 'ready' : undefined,
+    today: parentTaskId ? undefined : (d.today ?? undefined),
   });
 }
 
@@ -89,6 +94,7 @@ export async function saveDraft(opened: Task, live: Task, originalSubs: Task[], 
   if (d.estimateMinutes !== opened.estimateMinutes) patch.estimateMinutes = d.estimateMinutes;
   if (d.projectId !== opened.projectId && !opened.parentTaskId) patch.projectId = d.projectId;
   if (d.agentReady !== (opened.agentState !== null)) patch.agentState = d.agentReady ? 'ready' : null;
+  if (d.today !== opened.today && !opened.parentTaskId) patch.today = d.today;
   if (Object.keys(patch).length) await api.updateTask(opened.id, patch);
 
   const kept = new Set<string>();

@@ -349,3 +349,58 @@ describe('project icons', () => {
     expect(() => services.projects.update(o, garden.id, { icon: 'a'.repeat(17) })).toThrow();
   });
 });
+
+describe('Today', () => {
+  it('puts tasks on Today and moves them between main and side, keeping the day planned', () => {
+    const { services } = setup();
+    const a = services.tasks.create(o, { title: 'Budget', today: 'main' });
+    expect(a).toMatchObject({ today: 'main', todayOnly: false });
+    expect(a.todayAt).not.toBeNull();
+
+    const side = services.tasks.update(o, a.id, { today: 'side' });
+    expect(side).toMatchObject({ today: 'side', todayAt: a.todayAt });
+    const off = services.tasks.update(o, a.id, { today: null });
+    expect(off).toMatchObject({ today: null, todayAt: null });
+    expect(services.tasks.update(o, a.id, { today: 'side' }).todayAt! > a.todayAt!).toBe(true);
+  });
+
+  it('allows three open main tasks; done ones make room', () => {
+    const { services } = setup();
+    const main = [1, 2, 3].map((n) => services.tasks.create(o, { title: `Main ${n}`, today: 'main' }));
+    expect(errCode(() => services.tasks.create(o, { title: 'Fourth', today: 'main' }))).toBe('conflict');
+    const side = services.tasks.create(o, { title: 'Side', today: 'side' });
+    expect(errCode(() => services.tasks.update(o, side.id, { today: 'main' }))).toBe('conflict');
+
+    services.tasks.complete(o, main[0]!.id);
+    expect(services.tasks.update(o, side.id, { today: 'main' }).today).toBe('main');
+    // Done tasks stay on Today, for "Done today".
+    expect(services.tasks.get(o, main[0]!.id).today).toBe('main');
+  });
+
+  it('keeps Today-only tasks off the board until they leave Today', () => {
+    const { services } = setup();
+    expect(errCode(() => services.tasks.create(o, { title: 'Parcel', todayOnly: true }))).toBe('invalid');
+    const t = services.tasks.create(o, { title: 'Parcel', today: 'side', todayOnly: true });
+    expect(t.todayOnly).toBe(true);
+    expect(services.tasks.update(o, t.id, { today: null })).toMatchObject({ today: null, todayOnly: false });
+  });
+
+  it('is for open top-level tasks only', () => {
+    const { services } = setup();
+    const parent = services.tasks.create(o, { title: 'Parent' });
+    expect(errCode(() => services.tasks.create(o, { title: 'Sub', parentTaskId: parent.id, today: 'side' }))).toBe('invalid');
+    const sub = services.tasks.create(o, { title: 'Sub', parentTaskId: parent.id });
+    expect(errCode(() => services.tasks.update(o, sub.id, { today: 'side' }))).toBe('invalid');
+    services.tasks.complete(o, parent.id);
+    expect(errCode(() => services.tasks.update(o, parent.id, { today: 'side' }))).toBe('invalid');
+  });
+
+  it('undo puts a task back where it was on Today', () => {
+    const { services } = setup();
+    const t = services.tasks.create(o, { title: 'Budget', today: 'main' });
+    services.tasks.update(o, t.id, { today: null });
+    const [latest] = services.activity.list(o, {}).entries;
+    services.activity.undo(o, latest!.batchId);
+    expect(services.tasks.get(o, t.id)).toMatchObject({ today: 'main', todayAt: t.todayAt });
+  });
+});

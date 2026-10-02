@@ -52,8 +52,12 @@ function taskDetails(b: Task, a: Task, names: Names): string[] {
   // Only undo writes these in a plain update; normal status and hand-off steps have their own actions.
   if (b.status !== a.status) out.push(`Status: ${STATUS[b.status]} → ${STATUS[a.status]}`);
   if (b.agentState !== a.agentState) out.push(`Agents: ${AGENT[b.agentState ?? 'none']} → ${AGENT[a.agentState ?? 'none']}`);
+  // Events from before Today existed have no `today`.
+  if ((b.today ?? null) !== (a.today ?? null)) out.push(`Today: ${TODAY[b.today ?? 'none']} → ${TODAY[a.today ?? 'none']}`);
   return out;
 }
+
+const TODAY = { none: 'not on it', main: 'main', side: 'secondary' } as const;
 
 const STATUS = { todo: 'To do', in_progress: 'In progress', done: 'Done' } as const;
 const AGENT = { none: 'not handed over', ready: 'waiting', working: 'working on it', review: 'for review' } as const;
@@ -64,7 +68,7 @@ function taskLine(c: ActivityChange, names: Names): Omit<ChangeLine, 'key' | 'al
   const t = q(a.title);
   switch (c.action) {
     case 'created':
-      return { text: `Added ${t}${a.parentTaskId ? '' : ` to ${names(a.projectId)}`}`, details: [] };
+      return { text: `Added ${t}${a.parentTaskId ? '' : ` to ${a.todayOnly ? 'Today' : names(a.projectId)}`}`, details: [] };
     case 'completed':
       return { text: `Completed ${t}`, details: [] };
     case 'reopened':
@@ -97,6 +101,11 @@ function taskLine(c: ActivityChange, names: Names): Omit<ChangeLine, 'key' | 'al
       if (details.length === 1 && b.projectId !== a.projectId) return { text: `Moved ${t} to ${names(a.projectId)}`, details: [] };
       if (details.length === 1 && b.priority !== a.priority) {
         return { text: `Set ${t} to ${PRIORITY[a.priority]}`, details: [] };
+      }
+      if (details.length === 1 && (b.today ?? null) !== (a.today ?? null)) {
+        if (!a.today) return { text: `Took ${t} off Today`, details: [] };
+        if (b.today) return { text: `Made ${t} ${a.today === 'main' ? 'a main task' : 'secondary'} on Today`, details: [] };
+        return { text: `Put ${t} on Today${a.today === 'main' ? ' as a main task' : ''}`, details: [] };
       }
       return { text: `Changed ${t}`, details };
     }

@@ -159,6 +159,7 @@ function Group({
                 onComplete={actions.onComplete}
                 onToggleSubtask={actions.onToggleSubtask}
                 onToggleWork={actions.onToggleWork}
+                onToggleToday={actions.onToggleToday}
               />
             ) : null;
           })}

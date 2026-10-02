@@ -1,0 +1,403 @@
+/* Today: the day's plan as a short list. Main tasks are numbered and set off in the sun's colour;
+   secondary ones are plain board cards; finished ones fold away underneath. */
+
+.today {
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding-block: 1rem 7rem;
+}
+
+.today-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+}
+.today-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'SOFT' 100;
+  font-size: var(--step-3);
+  line-height: 1;
+}
+.today-date {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.today-progress {
+  display: grid;
+  justify-items: end;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.today-progress b {
+  color: var(--ink);
+  font-size: var(--step-0);
+}
+.today-bar {
+  height: 5px;
+  margin-bottom: 0.5rem;
+  border-radius: 3px;
+  background: var(--shallows);
+  overflow: hidden;
+}
+.today-bar i {
+  display: block;
+  height: 100%;
+  background: var(--sun);
+  transition: width 300ms ease;
+}
+
+.today-section {
+  margin-top: 1.25rem;
+}
+.today-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.today-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--contour-faint);
+}
+.today-main .today-label {
+  color: var(--sun);
+}
+.today-count {
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+.today-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+.today-empty {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1.5px dashed var(--contour-faint);
+  border-radius: 12px;
+  color: var(--ink-soft);
+}
+
+/* Board cards, without the drag affordance. */
+.today-slot {
+  cursor: default;
+}
+.today-card.is-main {
+  padding-block: 0.85rem;
+  border: 1.5px solid color-mix(in oklab, var(--sun) 55%, var(--contour-faint));
+  background: color-mix(in oklab, var(--sun) 7%, var(--water));
+}
+.today-card.is-main .card-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.today-num {
+  flex: none;
+  align-self: center;
+  width: 1.1rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'SOFT' 100;
+  font-size: var(--step-1);
+  line-height: 1;
+  color: var(--sun);
+  text-align: center;
+}
+.today-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+.today-only {
+  padding: 0 0.5rem;
+  border: 1px dashed var(--contour);
+  border-radius: var(--radius-control);
+}
+.today-carried {
+  color: var(--sun);
+  font-weight: 700;
+}
+.today-actions {
+  display: flex;
+  align-self: center;
+  margin: -0.4rem -0.45rem -0.4rem 0;
+}
+.today-actions .icon-btn {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.today-actions [aria-disabled='true'] {
+  opacity: 0.35;
+}
+
+/* ----- Add to today ----- */
+
+.today-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  padding: 0.25rem 0.3rem 0.25rem 0.85rem;
+  border: 1.5px dashed var(--contour);
+  border-radius: 12px;
+  background: var(--water);
+}
+.today-add:focus-within {
+  border-style: solid;
+  border-color: var(--sun);
+  box-shadow: 0 0 0 3px var(--sun-soft);
+}
+.today-add-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0.45rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  resize: none;
+  field-sizing: content;
+}
+.today-add-input:focus-visible {
+  outline: none;
+}
+.today-add-input::placeholder {
+  color: var(--ink-soft);
+}
+.today-add-slot,
+.today-pill {
+  flex: none;
+  height: 1.85rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--contour-faint);
+  border-radius: var(--radius-control);
+  background: var(--shallows);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.today-add-slot.is-main,
+.today-pill.is-main {
+  color: var(--sun);
+  border-color: var(--sun);
+  background: var(--sun-soft);
+}
+.today-pill:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.today-add-send {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sun);
+  color: var(--water);
+  font-weight: 800;
+}
+.today-add-send:disabled {
+  background: var(--contour-faint);
+  color: var(--ink-soft);
+}
+.today-add-hint {
+  flex-basis: 100%;
+  margin: 0 0 0.3rem;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+.today-pick {
+  width: 100%;
+  background: var(--water);
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+/* ----- Done today ----- */
+
+.today-done {
+  margin-top: 1.75rem;
+}
+.today-done summary {
+  padding: 0.3rem 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  cursor: pointer;
+}
+.today-done-list {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.today-done-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.today-done-check {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  color: var(--water);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.today-done-check:hover {
+  background: var(--ink);
+}
+.today-done-title {
+  padding: 0.35rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  text-align: left;
+  text-decoration: line-through;
+  text-decoration-color: var(--contour);
+}
+
+/* ----- Pick from the board ----- */
+
+.today-sheet {
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: min(85dvh, 44rem);
+  padding: 0;
+  border: 1.5px solid var(--contour-faint);
+  border-radius: 18px;
+  background: var(--water);
+  color: var(--ink);
+  box-shadow: 0 24px 60px -20px rgb(8 20 30 / 0.45);
+}
+.today-sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+.today-sheet::backdrop {
+  background: rgb(8 20 30 / 0.4);
+}
+.today-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.75rem 0.5rem 1.25rem;
+}
+.today-sheet-head h2 {
+  margin: 0;
+  font-size: var(--step-1);
+}
+.today-sheet-search {
+  margin: 0 1.25rem 0.5rem;
+  min-height: 2.6rem;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--contour-faint);
+  border-radius: 10px;
+  background: var(--shallows);
+  color: var(--ink);
+  font: inherit;
+  resize: none;
+}
+.today-sheet-note {
+  margin: 0 1.25rem 0.5rem;
+  color: var(--sun);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+.today-sheet-body {
+  overflow-y: auto;
+  padding: 0 1.25rem 1.25rem;
+}
+.today-sheet-group {
+  margin: 1rem 0 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.today-sheet-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.today-sheet-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--contour-faint);
+  border-radius: 12px;
+}
+.today-sheet-task {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.today-sheet-title {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.today-sheet-meta {
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+.today-sheet-meta.prio-now {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .today-title {
+    font-size: var(--step-2);
+  }
+  /* A bottom sheet on phones. */
+  .today-sheet {
+    width: 100vw;
+    max-width: 100vw;
+    margin: auto 0 0;
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+  }
+  .today-sheet-body {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .today-bar i {
+    transition: none;
+  }
+}

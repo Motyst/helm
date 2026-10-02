@@ -10,7 +10,16 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
-import { PRIORITIES, parseQuickAdd, projectCandidates, type Priority, type Project, type Task } from '@helm/shared';
+import {
+  MAX_TODAY_MAIN,
+  PRIORITIES,
+  parseQuickAdd,
+  projectCandidates,
+  type Priority,
+  type Project,
+  type Task,
+  type TodaySlot,
+} from '@helm/shared';
 import { api, ApiError } from '../../lib/api.ts';
 import { formatMinutes } from '../../lib/format.ts';
 import { upsertTask, useCreateProject, useProjects, useSetAgentState, useTaskAction, useTasks } from '../../lib/queries.ts';
@@ -25,6 +34,11 @@ import './editor.css';
 
 const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
 const ESTIMATES = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240];
+const TODAY_CHOICES: [TodaySlot | null, string][] = [
+  [null, 'No'],
+  ['main', 'Main'],
+  ['side', 'Secondary'],
+];
 const OTHER = '__other__';
 /** Transcripts longer than this are cut to two lines until expanded. */
 const LONG_TRANSCRIPT = 120;
@@ -48,7 +62,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   const tasks = useTasks();
   const projects = useProjects();
   const createProject = useCreateProject();
-  const ids = { title: useId(), notes: useId(), estimate: useId(), priority: useId() };
+  const ids = { title: useId(), notes: useId(), estimate: useId(), priority: useId(), today: useId() };
 
   const editing: Task | undefined =
     target.mode === 'edit' ? tasks.data?.find((t) => t.id === target.taskId && !t.deletedAt) : undefined;
@@ -77,6 +91,7 @@ export function TaskDialog({ target, queued, onClose }: Props) {
             estimateMinutes: null,
             subtasks: [],
             agentReady: false,
+            today: target.mode === 'create' ? (target.defaults.today ?? null) : null,
           },
   );
   const [unmatchedProject, setUnmatchedProject] = useState<string | null>(voice?.suggestion.unmatchedProject ?? null);
@@ -99,6 +114,10 @@ export function TaskDialog({ target, queued, onClose }: Props) {
   }, [focusSub]);
 
   const set = <K extends keyof TaskDraft>(k: K, v: TaskDraft[K]) => setDraft((d) => ({ ...d, [k]: v }));
+  // Main holds a few tasks; this one doesn't count against itself.
+  const mainFull =
+    (tasks.data ?? []).filter((t) => t.today === 'main' && t.status !== 'done' && !t.deletedAt && t.id !== editing?.id)
+      .length >= MAX_TODAY_MAIN;
   const parsed = parseQuickAdd(draft.title);
 
   useEffect(() => {
@@ -410,6 +429,36 @@ export function TaskDialog({ target, queued, onClose }: Props) {
             ))}
           </div>
         </div>
+
+        {!isSubtask && editing?.status !== 'done' && (
+          <div className="field editor-inline" role="radiogroup" aria-labelledby={ids.today}>
+            <span id={ids.today} className="editor-inline-label">
+              Today
+            </span>
+            <div className="segmented">
+              {TODAY_CHOICES.map(([value, label]) => {
+                const blocked = value === 'main' && mainFull && draft.today !== 'main';
+                return (
+                  <label
+                    key={label}
+                    className={`seg seg-today-${value ?? 'no'}`}
+                    title={blocked ? `Main has ${MAX_TODAY_MAIN} already` : undefined}
+                  >
+                    <input
+                      type="radio"
+                      name="today"
+                      checked={draft.today === value}
+                      disabled={blocked}
+                      onChange={() => set('today', value)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+            {editing?.todayOnly && !draft.today && <p className="field-hint">It will move to the board, in its project.</p>}
+          </div>
+        )}
 
         <div className="editor-grid">
           <div className="field editor-inline">

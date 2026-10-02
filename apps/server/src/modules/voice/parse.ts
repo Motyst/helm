@@ -83,6 +83,7 @@ function fileUnder(t: TaskSuggestion, tail: Tail, always: boolean): TaskSuggesti
     Object.assign(out, { projectId: tail.project?.id ?? null, unmatchedProject: null, projectChoices: [] });
   }
   if (tail.priority && (always || t.priority === null)) out.priority = tail.priority;
+  if (tail.today) out.today = tail.today;
   return out;
 }
 
@@ -99,6 +100,7 @@ function plain(transcript: string): TaskSuggestion {
     priority: null,
     estimateMinutes: null,
     subtasks: [],
+    today: null,
   };
 }
 
@@ -144,6 +146,7 @@ export function clean(t: ModelTask, projects: NamedProject[]): TaskSuggestion | 
       .map((s) => oneLine(s).slice(0, 500))
       .filter(Boolean)
       .slice(0, MAX_SUBTASKS),
+    today: null,
   };
 }
 

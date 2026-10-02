@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Task, TaskNode } from '@helm/shared';
 import { formatMinutes } from '../../lib/format.ts';
 import { agentBadge } from './agent-badge.ts';
@@ -12,6 +12,8 @@ export interface CardActions {
   onToggleSubtask: (sub: Task) => void;
   /** Start the task, or pause it (or its subtask) if it's in progress. */
   onToggleWork: (task: TaskNode) => void;
+  /** The ☀ button: put the task on Today, or take it off. */
+  onToggleToday?: (task: TaskNode) => void;
 }
 
 /** In progress itself, or one of its subtasks is. */
@@ -22,15 +24,34 @@ interface CardProps extends CardActions {
   task: TaskNode;
   /** Rendered inside the drag overlay: no sortable wiring, lifted look. */
   overlay?: boolean;
+  /** Before the check, e.g. a number. */
+  lead?: ReactNode;
+  /** More details after the card's own. */
+  meta?: ReactNode;
+  /** After the body, e.g. buttons. */
+  end?: ReactNode;
+  className?: string;
 }
 
-export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSubtask }: CardProps) {
+export function TaskCard({
+  task,
+  overlay = false,
+  onEdit,
+  onComplete,
+  onToggleSubtask,
+  onToggleToday,
+  lead,
+  meta,
+  end,
+  className,
+}: CardProps) {
   const [open, setOpen] = useState(false);
   const active = isWorking(task);
   const agent = agentBadge(task);
 
   return (
-    <article className={`card ${active ? 'is-active' : ''} ${overlay ? 'is-overlay' : ''}`}>
+    <article className={`card ${active ? 'is-active' : ''} ${overlay ? 'is-overlay' : ''} ${className ?? ''}`}>
+      {lead}
       <button
         className="card-check"
         aria-label={`Mark done: ${task.title}`}
@@ -61,6 +82,7 @@ export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSu
               <span className="visually-hidden"> subtasks done. {open ? 'Hide' : 'Show'} subtasks</span>
             </button>
           )}
+          {meta}
         </div>
         {open && !overlay && (
           <ul className="card-subs">
@@ -79,7 +101,32 @@ export function TaskCard({ task, overlay = false, onEdit, onComplete, onToggleSu
           </ul>
         )}
       </div>
+      {end}
+      {onToggleToday && (
+        <button
+          className={`card-sun${task.today ? ' is-on' : ''}`}
+          aria-pressed={Boolean(task.today)}
+          aria-label={task.today ? `On Today (${task.today === 'main' ? 'main' : 'secondary'}). Take off Today` : 'Add to Today'}
+          title={task.today ? 'On Today. Click to take it off' : 'Add to Today'}
+          onClick={() => onToggleToday(task)}
+          tabIndex={overlay ? -1 : 0}
+        >
+          <SunIcon />
+          {task.today === 'main' && <span className="card-sun-main">Main</span>}
+        </button>
+      )}
     </article>
+  );
+}
+
+export function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" />
+      </g>
+    </svg>
   );
 }
 

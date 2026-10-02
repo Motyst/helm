@@ -22,6 +22,9 @@ function task(p: Partial<Task> & { id: string }): Task {
     deletedAt: null,
     agentState: null,
     agentClaimedBy: null,
+    today: null,
+    todayAt: null,
+    todayOnly: false,
     ...p,
   };
 }

@@ -2,7 +2,13 @@
 export const CHANGELOG: { date: string; changes: string[] }[] = [
   {
     date: '2026-10-02',
-    changes: ['On a computer, type : and a word (like :fire) to add an emoji.'],
+    changes: [
+      'Today: a tab for the day’s plan, with up to 3 main tasks and secondary ones if there’s time.',
+      'Put board tasks on Today with ☀, or add tasks that live only on Today.',
+      'Unfinished tasks stay on Today the next day, marked with the day they were planned.',
+      'Focus starts with Today’s main tasks. Voice: end with “today” or “today, main”.',
+      'On a computer, type : and a word (like :fire) to add an emoji.',
+    ],
   },
   {
     date: '2026-10-01',

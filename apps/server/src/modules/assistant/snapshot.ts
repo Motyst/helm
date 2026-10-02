@@ -67,6 +67,7 @@ export function buildSnapshot(board: Task[], projects: Project[], recentlyDone: 
       `priority ${PRIORITY_WORD[t.priority]}`,
       t.status === 'in_progress' ? `IN PROGRESS, started ${ago(t.startedAt ?? t.updatedAt, now)}` : null,
       t.estimateMinutes ? `estimate ${t.estimateMinutes} min` : null,
+      t.today ? `on the user's Today list (${t.today === 'main' ? 'main' : 'secondary'})` : null,
       `added ${ago(t.createdAt, now)}`,
       t.source !== 'manual' ? `added by ${t.source}` : null,
       t.agentState === 'ready'

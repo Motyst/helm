@@ -23,6 +23,9 @@ function task(p: Partial<Task> & { id: string }): Task {
     deletedAt: null,
     agentState: null,
     agentClaimedBy: null,
+    today: null,
+    todayAt: null,
+    todayOnly: false,
     ...p,
   };
 }
@@ -84,5 +87,18 @@ describe('computeFocus', () => {
     ]);
     expect(f.current?.id).toBe('new');
     expect(f.alsoInProgress.map((n) => n.id)).toEqual(['old']);
+  });
+});
+
+describe('computeFocus with Today', () => {
+  it('puts Today’s main tasks first, in the order they were planned', () => {
+    const f = computeFocus([
+      task({ id: 'urgent', priority: 'now' }),
+      task({ id: 'later', priority: 'someday', today: 'main', todayAt: '2026-01-02T09:00:00.000Z' }),
+      task({ id: 'first', priority: 'soon', today: 'main', todayAt: '2026-01-02T08:00:00.000Z' }),
+      task({ id: 'side', priority: 'soon', today: 'side', todayAt: '2026-01-02T07:00:00.000Z' }),
+    ]);
+    expect(f.upNext?.id).toBe('first');
+    expect(f.now.map((n) => n.id)).toEqual(['later', 'urgent']);
   });
 });

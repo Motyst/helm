@@ -22,6 +22,9 @@ function task(p: Partial<Task> & { id: string }): Task {
     deletedAt: null,
     agentState: null,
     agentClaimedBy: null,
+    today: null,
+    todayAt: null,
+    todayOnly: false,
     ...p,
   };
 }
@@ -55,6 +58,16 @@ describe('describeEntry', () => {
     expect(texts(entry([done(parent), ...subs.map(done)]))).toEqual([['Completed “Ship”', 2]]);
     // A subtask completed alone keeps its own line.
     expect(texts(entry([done(subs[0]!)]))).toEqual([['Completed “Build”', 0]]);
+  });
+
+  it('says what happened on Today', () => {
+    const b = task({ id: 'Budget' });
+    const main = { ...b, today: 'main' as const, todayAt: '2026-09-29T08:00:00Z' };
+    expect(texts(entry([change('updated', b, main)]))).toEqual([['Put “Budget” on Today as a main task', 0]]);
+    expect(texts(entry([change('updated', main, { ...main, today: 'side' })]))).toEqual([['Made “Budget” secondary on Today', 0]]);
+    expect(texts(entry([change('updated', main, b)]))).toEqual([['Took “Budget” off Today', 0]]);
+    const parcel = task({ id: 'Parcel', today: 'side', todayOnly: true });
+    expect(texts(entry([change('created', null, parcel)]))).toEqual([['Added “Parcel” to Today', 0]]);
   });
 
   it('names what changed in an edit', () => {

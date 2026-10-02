@@ -161,8 +161,10 @@
     margin-left: 0;
     gap: 0;
   }
+  /* Four tabs and the icons fit a 375px screen. */
   .nav a {
-    padding: 0 0.45rem;
+    padding: 0 0.3rem;
+    font-size: 1.0625rem;
   }
   /* Room for the bigger tabs; the floating voice button keeps its size. */
   .topbar-end > .topbar-icon:not(.voice-btn) {

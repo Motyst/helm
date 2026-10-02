@@ -119,6 +119,7 @@ describe('voice parse', () => {
         priority: 'now',
         estimateMinutes: 30,
         subtasks: ['Buy brackets', 'Ladder'],
+        today: null,
       },
       {
         title: 'Plan trip',
@@ -129,6 +130,7 @@ describe('voice parse', () => {
         priority: null,
         estimateMinutes: null,
         subtasks: [],
+        today: null,
       },
       expect.objectContaining({ title: 'Call mum', projectId: null, unmatchedProject: null }),
       // Fits two projects: no guess, the user picks.
@@ -195,6 +197,14 @@ describe('voice parse', () => {
       { title: 'B', projectId: null, projectChoices: [], priority: 'now' },
     ]);
     expect(home.id).toBeTruthy();
+  });
+
+  it('puts a task on Today when the recording ends with “today”', async () => {
+    const { sendText } = await makeApp();
+    const side = ((await (await sendText('Call the bank today')).json()) as VoiceParseResult).tasks[0]!;
+    expect(side).toMatchObject({ title: 'Call the bank', today: 'side' });
+    const main = ((await (await sendText('Finish the budget draft. Soon, today, main.')).json()) as VoiceParseResult).tasks[0]!;
+    expect(main).toMatchObject({ title: 'Finish the budget draft', today: 'main', priority: 'soon' });
   });
 
   it('reads the label without a model too', async () => {

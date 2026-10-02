@@ -8,9 +8,9 @@ export interface Focus {
   activeSubtaskId: string | null;
   /** Other top-level tasks with in-progress work (only when the in-progress limit is > 1). */
   alsoInProgress: TaskNode[];
-  /** What to pick up after `current`: first open Now task, else first open Soon task. */
+  /** What to pick up after `current`: Today's first main task, else the first Now task, else Soon. */
   upNext: TaskNode | null;
-  /** Remaining Now tasks, excluding `current` and `upNext`. */
+  /** Today's main tasks, then the other Now tasks, excluding `current` and `upNext`. */
   now: TaskNode[];
 }
 
@@ -20,6 +20,11 @@ function isOpen(t: Task): boolean {
 
 function hasWorkInProgress(n: TaskNode): boolean {
   return n.status === 'in_progress' || n.subtasks.some((s) => s.status === 'in_progress');
+}
+
+/** In the order they went on Today. */
+function byPlanned(a: Task, b: Task): number {
+  return (a.todayAt ?? '').localeCompare(b.todayAt ?? '');
 }
 
 /** Latest-started first. */
@@ -47,7 +52,8 @@ export function computeFocus(tasks: readonly Task[]): Focus {
 
   const rest = roots.filter((n) => n.id !== current?.id);
   const alsoInProgress = rest.filter(hasWorkInProgress);
-  const nowList = rest.filter((n) => n.priority === 'now');
+  const todayMain = rest.filter((n) => n.today === 'main').sort(byPlanned);
+  const nowList = [...todayMain, ...rest.filter((n) => n.priority === 'now' && n.today !== 'main')];
 
   const upNext =
     nowList.find((n) => n.status === 'todo') ??

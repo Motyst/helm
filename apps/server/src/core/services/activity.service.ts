@@ -193,6 +193,10 @@ export class ActivityService {
         deletedAt: date(before.deletedAt),
         agentState: before.agentState ?? null,
         agentClaimedBy: before.agentClaimedBy ?? null,
+        // Events from before Today existed don't carry these.
+        today: before.today ?? null,
+        todayAt: date(before.todayAt ?? null),
+        todayOnly: before.todayOnly ?? false,
       };
       action = cur.deletedAt && !before.deletedAt ? 'restored' : !cur.deletedAt && before.deletedAt ? 'deleted' : 'updated';
     }

@@ -232,7 +232,7 @@ export function VoiceCapture({
             </p>
           ) : (
             <p className="voice-hint">
-              Say what needs doing. End with a board and now, soon or someday to file it there.
+              Say what needs doing. End with a board, a priority or “today” to file it there.
             </p>
           ))}
         {phase.kind === 'working' && heard && (

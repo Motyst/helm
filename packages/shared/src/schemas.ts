@@ -18,6 +18,12 @@ export const AGENT_STATES = ['ready', 'working', 'review'] as const;
 export const AgentState = z.enum(AGENT_STATES);
 export type AgentState = z.infer<typeof AgentState>;
 
+/** A task on the Today list: `main` (what makes the day, at most MAX_TODAY_MAIN open) or `side` (if there's time). */
+export const TODAY_SLOTS = ['main', 'side'] as const;
+export const TodaySlot = z.enum(TODAY_SLOTS);
+export type TodaySlot = z.infer<typeof TodaySlot>;
+export const MAX_TODAY_MAIN = 3;
+
 /** `manual`, `voice`, or `ai:<agent>` (agent = short slug). */
 export const TaskSource = z
   .string()
@@ -49,6 +55,12 @@ export const Task = z.object({
   agentState: AgentState.nullable(),
   /** Who claimed it (`token:<name>`, `owner`, ...), while `working` or `review`. */
   agentClaimedBy: z.string().nullable(),
+  /** On the Today list; null = not. Stays set once done, so it shows under "Done today". */
+  today: TodaySlot.nullable(),
+  /** When it went on Today. Before the start of today = carried over. */
+  todayAt: z.string().nullable(),
+  /** Added straight to Today: lives only there, never on the board. */
+  todayOnly: z.boolean(),
 });
 export type Task = z.infer<typeof Task>;
 
@@ -82,6 +94,10 @@ export const CreateTaskInput = z.object({
   source: TaskSource.optional(),
   /** Let an agent pick it up straight away. */
   agentState: z.literal('ready').nullable().optional(),
+  /** Put it on Today (top-level tasks only). */
+  today: TodaySlot.nullable().optional(),
+  /** Keep it off the board: it lives only on Today. Needs `today`. */
+  todayOnly: z.boolean().optional(),
   /** Create subtasks in the same step (same transaction). */
   subtasks: z
     .array(z.object({ title: Title, estimateMinutes: Estimate.optional() }))
@@ -99,6 +115,8 @@ export const UpdateTaskInput = z
     estimateMinutes: Estimate,
     status: TaskStatus,
     agentState: AgentState.nullable(),
+    /** Put on Today, move between main and side, or (null) take off. Top-level tasks only. */
+    today: TodaySlot.nullable(),
   })
   .partial()
   .strict();
@@ -261,6 +279,8 @@ export interface TaskSuggestion {
   priority: Priority | null;
   estimateMinutes: number | null;
   subtasks: string[];
+  /** "…, today" or "…, today, main" said at the end; null = not said. */
+  today: TodaySlot | null;
 }
 
 export interface VoiceParseResult {

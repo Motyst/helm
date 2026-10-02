@@ -1,0 +1,101 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { MAX_TODAY_MAIN, type Priority, type TaskNode, type TodaySlot } from '@helm/shared';
+import { formatMinutes } from '../../lib/format.ts';
+import { useProjects, useSetToday } from '../../lib/queries.ts';
+import { LineInput } from '../../ui/LineInput.tsx';
+import { projectIcon } from '../board/project-icon.ts';
+
+const PRIORITY_LABEL: Record<Priority, string> = { now: 'Now', soon: 'Soon', someday: 'Someday' };
+const RANK: Record<Priority, number> = { now: 0, soon: 1, someday: 2 };
+
+/**
+ * Open board tasks, by project, to put on Today. Stays open so several can be picked in a row;
+ * each one leaves the list as it's added.
+ */
+export function PickSheet({ roots, mainFull, onClose }: { roots: TaskNode[]; mainFull: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const projects = useProjects();
+  const setToday = useSetToday();
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    const d = dialogRef.current;
+    if (d && !d.open) d.showModal();
+  }, []);
+
+  const groups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const open = roots
+      .filter((t) => !t.today && !t.todayOnly && t.status !== 'done' && !t.deletedAt)
+      .filter((t) => !q || t.title.toLowerCase().includes(q))
+      .sort((a, b) => RANK[a.priority] - RANK[b.priority]);
+    return [null, ...(projects.data ?? [])]
+      .map((p) => ({ project: p, tasks: open.filter((t) => t.projectId === (p?.id ?? null)) }))
+      .filter((g) => g.tasks.length > 0);
+  }, [roots, projects.data, query]);
+
+  const pick = (t: TaskNode, to: TodaySlot) => setToday.mutate({ id: t.id, today: to });
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="today-sheet"
+      aria-labelledby="pick-heading"
+      onClose={onClose}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) dialogRef.current.close(); // backdrop
+      }}
+    >
+      <header className="today-sheet-head">
+        <h2 id="pick-heading">Pick from the board</h2>
+        <button type="button" className="btn btn-primary" onClick={() => dialogRef.current?.close()}>
+          Done
+        </button>
+      </header>
+      <LineInput
+        className="today-sheet-search"
+        aria-label="Find a task"
+        placeholder="Find a task…"
+        value={query}
+        onValueChange={setQuery}
+        onEnter={() => {}}
+      />
+      {mainFull && <p className="today-sheet-note">Main has {MAX_TODAY_MAIN} already. You can still add to Secondary.</p>}
+      <div className="today-sheet-body">
+        {groups.length === 0 && (
+          <p className="today-empty">{query ? 'No open task matches.' : 'Everything open is already on Today.'}</p>
+        )}
+        {groups.map(({ project, tasks }) => (
+          <section key={project?.id ?? 'inbox'}>
+            <h3 className="today-sheet-group">{project ? `${projectIcon(project)} ${project.name}` : '📥 Inbox'}</h3>
+            <ul className="today-sheet-list">
+              {tasks.map((t) => (
+                <li key={t.id}>
+                  <div className="today-sheet-task">
+                    <span className="today-sheet-title">{t.title}</span>
+                    <span className={`today-sheet-meta prio-${t.priority}`}>
+                      {PRIORITY_LABEL[t.priority]}
+                      {t.estimateMinutes ? ` · ${formatMinutes(t.estimateMinutes)}` : ''}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="today-pill is-main"
+                    disabled={mainFull}
+                    onClick={() => pick(t, 'main')}
+                    aria-label={`Add to Main: ${t.title}`}
+                  >
+                    Main
+                  </button>
+                  <button type="button" className="today-pill" onClick={() => pick(t, 'side')} aria-label={`Add to Secondary: ${t.title}`}>
+                    2nd
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </dialog>
+  );
+}

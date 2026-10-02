@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import type { Priority, TaskSuggestion, VoiceParseResult } from '@helm/shared';
+import type { Priority, TaskSuggestion, TodaySlot, VoiceParseResult } from '@helm/shared';
 import { TaskDialog } from './TaskDialog.tsx';
 
 /** Where a draft came from when it wasn't typed: shown in the dialog, saved as source `voice`. */
@@ -19,6 +19,8 @@ export interface CreateDefaults {
   title?: string;
   projectId?: string | null;
   priority?: Priority;
+  /** Opened from Today: put it there. */
+  today?: TodaySlot;
   parentTaskId?: string;
   voice?: VoiceOrigin;
 }

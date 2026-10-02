@@ -14,6 +14,7 @@ import type {
   Project,
   Task,
   Timer,
+  TodaySlot,
   UpdateProjectInput,
 } from '@helm/shared';
 import { api, type ActivityQuery, type DoneQuery, type TaskAction } from './api.ts';
@@ -200,6 +201,15 @@ export function useTaskAction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: TaskAction }) => api.taskAction(id, action),
+    onSuccess: (task) => upsertTask(qc, task),
+  });
+}
+
+/** Put a task on Today (main or side) or take it off (null). */
+export function useSetToday() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, today }: { id: string; today: TodaySlot | null }) => api.updateTask(id, { today }),
     onSuccess: (task) => upsertTask(qc, task),
   });
 }

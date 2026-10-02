@@ -22,6 +22,9 @@ export function toTask(r: TaskRow): Task {
     deletedAt: iso(r.deletedAt),
     agentState: r.agentState ?? null,
     agentClaimedBy: r.agentClaimedBy ?? null,
+    today: r.today ?? null,
+    todayAt: iso(r.todayAt),
+    todayOnly: r.todayOnly,
   };
 }
 

@@ -1,4 +1,4 @@
-import type { Priority } from '@helm/shared';
+import type { Priority, TodaySlot } from '@helm/shared';
 
 interface NamedProject {
   id: string;
@@ -12,6 +12,8 @@ export interface Tail {
   /** undefined = not said, null = Inbox. */
   project?: NamedProject | null;
   priority?: Priority;
+  /** "…, today" puts it on Today; "…, today, main" among the main tasks. */
+  today?: TodaySlot;
 }
 
 const PRIORITY_WORDS: [string, Priority][] = [
@@ -24,6 +26,11 @@ const FILLER = 'uh+|um+|uhm|erm|er|ah+|hmm+|okay|ok|please|thanks|thank you|that
 /** "…in Home", "…put it in the Home board". */
 const MARKER = '(?:(?:put|add|file|move) (?:it|this) )?(?:in|into|to|under|for)(?: the)?';
 
+/** "…put it on today", "…for today". */
+const TODAY_LEAD = '(?:(?:put|add) (?:it|this) )?(?:on|for) ';
+/** Between "today" and "main": a space or the pause the transcriber wrote. */
+const GAP = '[\\s,.;:–—-]+';
+
 /** Trailing spaces and punctuation. */
 const SEPARATORS = /[\s.,!?;:…–—-]+$/u;
 /** Ends with a pause the transcriber wrote down: "Buy milk." / "Buy milk," */
@@ -35,6 +42,7 @@ const atEnd = (body: string) => new RegExp(`(?<![\\p{L}\\p{N}])${body}$`, 'iu');
 
 type Matcher =
   | { kind: 'filler'; re: RegExp }
+  | { kind: 'today'; re: RegExp; today: TodaySlot }
   | { kind: 'priority'; re: RegExp; priority: Priority }
   | { kind: 'project'; re: RegExp; project: NamedProject | null };
 
@@ -52,6 +60,12 @@ function matchers(projects: readonly NamedProject[]): Matcher[] {
       project: p,
     })),
     { kind: 'project', re: atEnd(label('inbox')), project: null },
+    {
+      kind: 'today',
+      re: atEnd(`(?:${TODAY_LEAD})?(?:today${GAP}main(?: task)?|main(?: task)?${GAP}(?:for )?today)`),
+      today: 'main',
+    },
+    { kind: 'today', re: atEnd(`(?:${TODAY_LEAD})?today`), today: 'side' },
     ...PRIORITY_WORDS.map(([w, priority]): Matcher => ({
       kind: 'priority',
       re: atEnd(`(?:(?:priority|prio) )?(?:${w})(?: priority)?`),
@@ -62,7 +76,7 @@ function matchers(projects: readonly NamedProject[]): Matcher[] {
 }
 
 /**
- * Read a label spoken at the end of a recording: a project and/or a priority, in either order,
+ * Read a label spoken at the end of a recording: a project, a priority and/or "today", in any order,
  * like "Buy milk. Home, soon." Words are taken off the end only while it's clear they're a label:
  * a project needs a pause before it ("…milk. Home") or a lead-in ("…milk in Home", "…Home board"),
  * so "Clean the kitchen" stays whole even with a Kitchen project.
@@ -78,6 +92,7 @@ export function readTail(transcript: string, projects: readonly NamedProject[]):
     for (const m of all) {
       if (m.kind === 'project' && tail.project !== undefined) continue;
       if (m.kind === 'priority' && tail.priority) continue;
+      if (m.kind === 'today' && tail.today) continue;
       const r = m.re.exec(end);
       if (r) {
         hit = { m, at: r.index, marked: !!(r.groups?.marker || r.groups?.suffix) };
@@ -95,9 +110,10 @@ export function readTail(transcript: string, projects: readonly NamedProject[]):
 
     if (hit.m.kind === 'project') tail.project = hit.m.project;
     if (hit.m.kind === 'priority') tail.priority = hit.m.priority;
+    if (hit.m.kind === 'today') tail.today = hit.m.today;
     rest = before;
   }
 
-  if (tail.project === undefined && !tail.priority) return { rest: transcript };
+  if (tail.project === undefined && !tail.priority && !tail.today) return { rest: transcript };
   return { ...tail, rest: rest.replace(SEPARATORS, '') };
 }

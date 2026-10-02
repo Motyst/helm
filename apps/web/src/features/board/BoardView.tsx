@@ -15,7 +15,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { buildTree, PRIORITIES, type Priority, type Project, type Task, type TaskNode } from '@helm/shared';
-import { useMoveTask, useProjects, useTaskAction, useTasks, useUpdateProject } from '../../lib/queries.ts';
+import { useMoveTask, useProjects, useSetToday, useTaskAction, useTasks, useUpdateProject } from '../../lib/queries.ts';
 import { hrefFor } from '../../lib/route.ts';
 import { useCompleteTask } from '../../lib/useCompleteTask.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -60,13 +60,18 @@ export function BoardView() {
   const action = useTaskAction();
   const updateProject = useUpdateProject();
   const complete = useCompleteTask();
+  const setToday = useSetToday();
   const editor = useEditor();
   const toast = useToast();
 
   const [inboxCollapsed, setInboxCollapsed] = useState(readInboxCollapsed);
   const [projectDialog, setProjectDialog] = useState<{ project?: Project; key: number } | null>(null);
 
-  const roots = useMemo(() => buildTree(tasks.data ?? []).filter((t) => t.status !== 'done'), [tasks.data]);
+  // Today-only tasks live on the Today tab, not here.
+  const roots = useMemo(
+    () => buildTree(tasks.data ?? []).filter((t) => t.status !== 'done' && !t.todayOnly),
+    [tasks.data],
+  );
   const nodes = useMemo(() => new Map(roots.map((n) => [n.id, n])), [roots]);
   const bins = useMemo(() => [INBOX_KEY, ...(projects.data ?? []).map((p) => p.id)], [projects.data]);
   const base = useMemo(() => buildColumns(roots, bins), [roots, bins]);
@@ -208,11 +213,37 @@ export function BoardView() {
     );
   }
 
+  /** ☀ on a card: onto Today under Secondary (with a shortcut to Main), or off again. */
+  function toggleToday(t: TaskNode) {
+    const was = t.today;
+    if (was) {
+      setToday.mutate(
+        { id: t.id, today: null },
+        {
+          onSuccess: () =>
+            toast({ message: `Off Today: ${t.title}`, action: { label: 'Undo', run: () => setToday.mutate({ id: t.id, today: was }) } }),
+        },
+      );
+    } else {
+      setToday.mutate(
+        { id: t.id, today: 'side' },
+        {
+          onSuccess: () =>
+            toast({
+              message: `On Today: ${t.title}`,
+              action: { label: 'Make it main', run: () => setToday.mutate({ id: t.id, today: 'main' }) },
+            }),
+        },
+      );
+    }
+  }
+
   const cardActions = {
     onEdit: (t: Task) => editor.openEdit(t.id),
     onComplete: (t: Task) => complete(t),
     onToggleSubtask: (s: Task) => action.mutate({ id: s.id, action: s.status === 'done' ? 'reopen' : 'complete' }),
     onToggleWork: toggleWork,
+    onToggleToday: toggleToday,
   };
 
   const groupsFor = (bin: string) =>

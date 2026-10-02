@@ -15,16 +15,19 @@ change it through MCP or a REST API. Changes show up everywhere at once.
   **Someday**. Tabs along the top jump to a project; long panels show 10 tasks, then "Show more".
   Drag tasks between projects and priorities; on a phone, swipe a task right to finish it or left
   to start it. Add a task right in a panel: type, press Enter, type the next.
+- **Today**: the day's plan. Up to three **main** tasks and **secondary** ones if there's time.
+  Put board tasks on it with ☀, or add tasks that live only there. Unfinished ones carry over to
+  the next day, marked as such.
 - **Tasks** with notes, subtasks and an estimate; pick the project with one tap. One task is in
   progress at a time.
-- **Focus**: the task you're on, time spent vs. the estimate, and what's next, in one of three
-  layouts (One thing, Vital three, Compass).
+- **Focus**: the task you're on, time spent vs. the estimate, and what's next (Today's main tasks
+  first), in one of three layouts (One thing, Vital three, Compass).
 - **Timer** that runs on the server, so every device shows the same countdown, with a push
   notification when it ends.
 - **Done**: what you finished, starting with today, plus an **Activity** feed of every change
   with Undo.
 - **Voice**: say what needs doing and Helm drafts the task (title, project, priority, subtasks).
-  End with a board and a priority ("..., Home, soon") to file it there.
+  End with a board, a priority or "today" ("..., Home, soon, today") to file it there.
 - **Assistant**: suggests an order for your tasks and answers questions about the board.
 - **AI agents**: hand a task to an agent, which claims it, works on it and sends it back for
   your review.
@@ -37,7 +40,7 @@ change it through MCP or a REST API. Changes show up everywhere at once.
   <img src="docs/screenshots/phone-voice-review.png" width="250" alt="A task drafted by voice">
 </p>
 
-Desktop keys: **N** new task, **V** voice, **A** assistant, **B** / **F** / **D** to switch views.
+Desktop keys: **N** new task, **V** voice, **A** assistant, **B** / **T** / **F** / **D** to switch views.
 Type `:` and a word in any text field for emoji (`:fire` → 🔥).
 
 ## Quick start

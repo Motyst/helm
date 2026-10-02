@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import {
   AGENT_STATES,
+  TODAY_SLOTS,
   buildTree,
   INBOX,
   PRIORITIES,
@@ -24,6 +25,9 @@ const ProjectArg = z
   .max(100)
   .describe('Project name or id. "Inbox" means no project. A unique start or part of the name also works; an ambiguous one is refused.');
 const PriorityArg = z.enum(PRIORITIES).describe('now = doing today, soon = this week, someday = later');
+const TodayArg = z
+  .enum(TODAY_SLOTS)
+  .describe("The user's Today list: main = one of the (at most 3) things that make the day, side = if there's time");
 const Minutes = z.number().int().min(1).max(1440);
 const Note = z.string().min(1).max(5000);
 
@@ -104,6 +108,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     ...(t.completedAt ? { completedAt: t.completedAt } : {}),
     ...(t.agentState ? { agentState: t.agentState } : {}),
     ...(t.agentClaimedBy ? { claimedBy: t.agentClaimedBy.replace(/^token:/, '') } : {}),
+    ...(t.today ? { today: t.today, ...(t.todayOnly ? { todayOnly: true } : {}) } : {}),
     addedBy: t.source,
   });
 
@@ -156,7 +161,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     {
       title: 'List open tasks',
       description:
-        'Open (not done) tasks with their subtasks, ordered by priority and then by the user’s own order. Filter by project, priority, status, agent hand-off state or text.',
+        'Open (not done) tasks with their subtasks, ordered by priority and then by the user’s own order. Filter by project, priority, status, agent hand-off state, Today or text.',
       inputSchema: {
         project: ProjectArg.optional(),
         priority: PriorityArg.optional(),
@@ -166,6 +171,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           .optional()
           .describe('ready = handed to agents and free to claim, working = claimed, review = waiting for the user'),
         query: z.string().max(200).optional().describe('Case-insensitive text to find in titles and notes'),
+        today: z.boolean().optional().describe('true = only tasks on the user’s Today list (main and side)'),
       },
       annotations: READ,
     },
@@ -181,6 +187,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           .filter((n) => !args.priority || n.priority === args.priority)
           .filter((n) => !args.status || n.status === args.status)
           .filter((n) => !args.agent_state || n.agentState === args.agent_state)
+          .filter((n) => args.today === undefined || Boolean(n.today) === args.today)
           .filter((n) => !q || `${n.title}\n${n.notes ?? ''}`.toLowerCase().includes(q))
           .sort((a, b) => rank(a.priority) - rank(b.priority))
           .map((n) => nodeView(n, names));
@@ -263,6 +270,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
         subtasks: z.array(z.string().min(1).max(500)).max(50).optional().describe('Titles of subtasks to add'),
         for_agent: z.boolean().optional().describe('Hand it to agents straight away (agent_state "ready")'),
         allow_duplicate: z.boolean().optional().describe('Add it even if an open task has the same title'),
+        today: TodayArg.optional(),
       },
       annotations: WRITE,
     },
@@ -296,6 +304,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           parentTaskId: args.parent_task_id,
           subtasks: args.subtasks?.map((title) => ({ title })),
           agentState: args.for_agent ? 'ready' : undefined,
+          today: args.today,
         });
         return withSubtasks(task);
       }),
@@ -306,13 +315,14 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
     {
       title: 'Edit a task',
       description:
-        'Change a task’s title, priority, estimate or project. Only the fields you pass change. To write notes use add_note.',
+        'Change a task’s title, priority, estimate, project or place on Today. Only the fields you pass change. To write notes use add_note.',
       inputSchema: {
         id: TaskId,
         title: z.string().min(1).max(500).optional(),
         priority: PriorityArg.optional(),
         estimate_minutes: Minutes.nullable().optional().describe('null clears the estimate'),
         project: ProjectArg.optional().describe('Move to this project ("Inbox" for none); subtasks follow'),
+        today: TodayArg.nullable().optional().describe('Put on Today as main or side; null takes it off'),
       },
       annotations: { ...WRITE, idempotentHint: true },
     },
@@ -324,6 +334,7 @@ export function buildMcpServer(services: Services, p: Principal, config: Config)
           ...(args.priority !== undefined ? { priority: args.priority } : {}),
           ...(args.estimate_minutes !== undefined ? { estimateMinutes: args.estimate_minutes } : {}),
           ...(projectId !== undefined ? { projectId } : {}),
+          ...(args.today !== undefined ? { today: args.today } : {}),
         });
         return withSubtasks(task);
       }),
