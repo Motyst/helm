@@ -36,9 +36,10 @@ change it through MCP or a REST API. Changes show up everywhere at once.
 - **Seven themes**, each with a woodblock-print landscape.
 
 <p>
-  <img src="docs/screenshots/phone-focus.png" width="250" alt="Focus on a phone: the task in progress, its next step and the timer">
-  <img src="docs/screenshots/phone-board.png" width="250" alt="Board on a phone, with a tab per project">
-  <img src="docs/screenshots/phone-voice-review.png" width="250" alt="A task drafted by voice">
+  <img src="docs/screenshots/phone-board.png" width="200" alt="Board on a phone, with a tab per project and key words in bold">
+  <img src="docs/screenshots/phone-today.png" width="200" alt="Today on a phone: main tasks, secondary ones and one carried over from yesterday">
+  <img src="docs/screenshots/phone-focus.png" width="200" alt="Focus on a phone: the task in progress, its next step and the timer">
+  <img src="docs/screenshots/phone-voice-review.png" width="200" alt="A task drafted by voice">
 </p>
 
 Desktop keys: **N** new task, **V** voice, **A** assistant, **B** / **T** / **F** / **D** to switch views.
